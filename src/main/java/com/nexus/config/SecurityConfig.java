@@ -17,23 +17,26 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints — no token needed
                 .requestMatchers(
+                    // Auth - public
                     "/api/v1/auth/register",
                     "/api/v1/auth/login",
                     "/api/v1/auth/health",
-                    // H2 console (dev only)
+                    "/api/v1/auth/verify",
+                    // News - open for now (add JWT protection later)
+                    "/api/v1/health/news/**",
+                    "/api/v1/health/news/alerts",
+                    "/api/v1/health/news/refresh",
+                    // H2 console
                     "/h2-console/**",
-                    // Swagger / OpenAPI
+                    // Swagger
                     "/swagger-ui.html",
                     "/swagger-ui/**",
                     "/api-docs/**",
                     "/v3/api-docs/**"
                 ).permitAll()
-                // Everything else requires a valid JWT
                 .anyRequest().authenticated()
             )
-            // Allow H2 console to render in a frame (dev only)
             .headers(headers -> headers.frameOptions(fo -> fo.disable()));
 
         return http.build();
