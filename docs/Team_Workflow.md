@@ -4,6 +4,7 @@
 | Role | Person | Works in | Responsibilities |
 |------|--------|----------|------------------|
 | Backend Lead | Emmanuel Narh | `api-gateway/`, `src/` | Project setup, API Gateway, code review |
+|Admin Service| Emmanuel Narh/ Nana Kwadwo|adminservice/ | User management, audit logs, dashboard stats, system health
 | Auth Service | Emmanuel Narh | `auth-service/` | Login, Register, JWT, User profiles |
 | News Service | Emmanuel Narh | `news-service/` | Health ticker, external news API |
 | Media Service | Member 4 | `media-service/` | Video upload, streaming, storage |

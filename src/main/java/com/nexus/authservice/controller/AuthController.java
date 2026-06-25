@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
@@ -24,23 +25,27 @@ public class AuthController {
     private AuthService authService;
 
     @Autowired
+    @Qualifier("authJwtUtil")
     private JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    @Operation(summary = "Register a new user")
+    @Operation(summary = "Register a new user (USER or ADMIN)")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             User newUser = authService.register(
                 request.getEmail(),
-                request.getPassword(),      // DTO — not raw User entity
+                request.getPassword(),
                 request.getFullName(),
-                request.getIndexNumber()
+                request.getIndexNumber(),
+                request.getRole()
             );
+            
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of(
                     "success", true,
                     "message", "User registered successfully",
-                    "email", newUser.getEmail()
+                    "email", newUser.getEmail(),
+                    "role", newUser.getRole()
                 ));
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Email already exists!")) {
@@ -57,14 +62,18 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             User loggedUser = authService.login(request.getEmail(), request.getPassword());
-            String token = jwtUtil.generateToken(loggedUser.getEmail());
+            
+            // ===== FIXED: Generate token WITH role =====
+            String token = jwtUtil.generateToken(loggedUser.getEmail(), loggedUser.getRole());
 
-            return ResponseEntity.ok(new LoginResponse(
-                "Welcome back, " + loggedUser.getFullName(),
-                loggedUser.getEmail(),
-                loggedUser.getFullName(),
-                token,
-                86400000
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Welcome back, " + loggedUser.getFullName(),
+                "email", loggedUser.getEmail(),
+                "fullName", loggedUser.getFullName(),
+                "role", loggedUser.getRole(),
+                "token", token,
+                "expiresIn", 86400000
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -91,7 +100,10 @@ public class AuthController {
         String token = authHeader.substring(7);
         if (jwtUtil.validateToken(token)) {
             String email = jwtUtil.extractEmail(token);
-            return ResponseEntity.ok(Map.of("valid", true, "email", email));
+            return ResponseEntity.ok(Map.of(
+                "valid", true, 
+                "email", email
+            ));
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

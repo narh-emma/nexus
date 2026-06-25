@@ -30,7 +30,11 @@ public class User {
     private String signDialect = "ASL";
     
     @Column(columnDefinition = "TEXT")
-    private String medicalPreferences;  
+    private String medicalPreferences;
+    
+    // ===== ADD THIS: OPTIONAL ROLE FIELD =====
+    @Column(name = "role")
+    private String role = "USER";  // Can be null for regular users, "ADMIN" for admins
     
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -40,7 +44,7 @@ public class User {
     
     public User() {}
     
-   
+    // Getters
     public UUID getId() { return id; }
     public String getIndexNumber() { return indexNumber; }
     public String getFullName() { return fullName; }
@@ -52,7 +56,16 @@ public class User {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     
+    // ===== ADD GETTER AND SETTER FOR ROLE =====
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
     
+    // ===== ADD HELPER METHOD TO CHECK IF ADMIN =====
+    public boolean isAdmin() {
+        return "ADMIN".equalsIgnoreCase(role);
+    }
+    
+    // Setters
     public void setId(UUID id) { this.id = id; }
     public void setIndexNumber(String indexNumber) { this.indexNumber = indexNumber; }
     public void setFullName(String fullName) { this.fullName = fullName; }

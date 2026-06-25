@@ -27,3 +27,12 @@
 | summary | TEXT | News content |
 | source | VARCHAR(120) | Source (WHO, CDC, etc.) |
 | priority | INTEGER | 0=normal, 1=alert, 2=critical |
+
+### Table: `audit_log`
+Column|	Type|	Description
+id|	VARCHAR(255)|	Primary key
+actor_id|	VARCHAR(255)|	User ID who performed the action
+action|	VARCHAR(255)|	Action performed (LOGIN, DELETE, UPDATE, etc.)
+target_id|	VARCHAR(255)|	Target entity ID (optional)
+details	TEXT|	Additional details about the action
+created_at|	TIMESTAMP	When the action was performed
