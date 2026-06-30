@@ -1,7 +1,8 @@
 package com.nexus.authservice.controller;
 
 import com.nexus.authservice.dto.LoginRequest;
-import com.nexus.authservice.dto.LoginResponse;
+import com.nexus.authservice.dto.PasswordResetConfirmRequest;
+import com.nexus.authservice.dto.PasswordResetRequest;
 import com.nexus.authservice.dto.RegisterRequest;
 import com.nexus.authservice.model.RefreshToken;
 import com.nexus.authservice.model.User;
@@ -36,7 +37,7 @@ public class AuthController {
     private LogoutService logoutService;
 
     @Autowired
-    private RefreshTokenService refreshTokenService;  // ← ADDED
+    private RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user (USER or ADMIN)")
@@ -73,10 +74,7 @@ public class AuthController {
         try {
             User loggedUser = authService.login(request.getEmail(), request.getPassword());
             
-            // Generate access token (24 hours)
             String accessToken = jwtUtil.generateToken(loggedUser.getEmail(), loggedUser.getRole());
-            
-            // Generate refresh token (7 days)
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(loggedUser.getEmail());
 
             return ResponseEntity.ok(Map.of(
@@ -87,7 +85,7 @@ public class AuthController {
                 "role", loggedUser.getRole(),
                 "accessToken", accessToken,
                 "refreshToken", refreshToken.getToken(),
-                "expiresIn", 86400000  // 24 hours in milliseconds
+                "expiresIn", 86400000
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -106,11 +104,9 @@ public class AuthController {
                     .body(Map.of("success", false, "error", "Refresh token is required"));
             }
 
-            // Verify refresh token
             Map<String, Object> verification = refreshTokenService.verifyRefreshToken(refreshToken);
             User user = (User) verification.get("user");
 
-            // Generate new access token
             String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getRole());
 
             return ResponseEntity.ok(Map.of(
@@ -120,6 +116,45 @@ public class AuthController {
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
+    // ==================== PASSWORD RESET ENDPOINTS ====================
+
+    @PostMapping("/password/reset-request")
+    @Operation(summary = "Request password reset")
+    public ResponseEntity<?> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+        try {
+            String token = authService.generatePasswordResetToken(request.getEmail());
+            
+            // In production, send email with token
+            // For now, log token to console
+            System.out.println("🔐 Password reset token for " + request.getEmail() + ": " + token);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Password reset token sent to your email",
+                "token", token  // Only for development - remove in production
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/password/reset")
+    @Operation(summary = "Reset password using token")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        try {
+            authService.resetPassword(request.getToken(), request.getNewPassword());
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Password reset successfully"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("success", false, "error", e.getMessage()));
         }
     }
