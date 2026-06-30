@@ -1,9 +1,9 @@
 package com.nexus.media.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.CreationTimestamp;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -12,82 +12,88 @@ public class VideoVault {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "video_id", updatable = false, nullable = false)
-    private UUID videoId;
+    private UUID id;
 
-    @NotNull
-    @Column(length = 200, nullable = false)
+    @Column(nullable = false)
     private String title;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @NotNull
-    @Column(length = 50, nullable = false)
+    @Column(nullable = false)
     private String category;
 
-    @NotNull
-    @Column(name = "storage_path", length = 500, nullable = false)
-    private String storagePath;
+    @Column(name = "video_url", nullable = false)
+    private String videoUrl;
 
-    @Column(name = "thumbnail_path", length = 500)
-    private String thumbnailPath;
+    @Column(name = "thumbnail_url")
+    private String thumbnailUrl;
 
-    @NotNull
-    @Column(name = "duration_seconds", nullable = false)
-    private Integer durationSeconds;
+    private Integer duration; // in seconds
 
-    @Column(name = "sign_track_path", length = 500)
-    private String signTrackPath;
+    @Column(name = "is_offline_available")
+    private boolean isOfflineAvailable = false;
 
-    @Column(length = 10)
-    private String language = "en";
+    @ElementCollection
+    @CollectionTable(name = "video_tags", joinColumns = @JoinColumn(name = "video_id"))
+    @Column(name = "tag")
+    private List<String> tags = new ArrayList<>();
 
-    @Column(name = "is_offline_cacheable")
-    private Boolean isOfflineCacheable = true;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @CreationTimestamp
-@Column(name = "uploaded_at", insertable = true, updatable = true)    private OffsetDateTime uploadedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    public Object getTitle() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getTitle'");
+    @Column(name = "view_count")
+    private Long viewCount = 0L;
+
+    // Constructors
+    public VideoVault() {}
+
+    public VideoVault(String title, String description, String category, String videoUrl) {
+        this.title = title;
+        this.description = description;
+        this.category = category;
+        this.videoUrl = videoUrl;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public String getStoragePath() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getStoragePath'");
-    }
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public void setStoragePath(String string) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setStoragePath'");
-    }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public void setTitle(Object title2) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setTitle'");
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public Object getDescription() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDescription'");
-    }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
-    public void setDescription(Object description2) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setDescription'");
-    }
+    public String getVideoUrl() { return videoUrl; }
+    public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
 
-    public Object getCategory() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getCategory'");
-    }
+    public String getThumbnailUrl() { return thumbnailUrl; }
+    public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }
 
-    public void setCategory(Object category2) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setCategory'");
-    }
+    public Integer getDuration() { return duration; }
+    public void setDuration(Integer duration) { this.duration = duration; }
 
-    // Getters, Setters, Constructors
+    public boolean isOfflineAvailable() { return isOfflineAvailable; }
+    public void setOfflineAvailable(boolean offlineAvailable) { isOfflineAvailable = offlineAvailable; }
+
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public Long getViewCount() { return viewCount; }
+    public void setViewCount(Long viewCount) { this.viewCount = viewCount; }
 }

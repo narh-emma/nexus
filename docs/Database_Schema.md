@@ -36,3 +36,25 @@ action|	VARCHAR(255)|	Action performed (LOGIN, DELETE, UPDATE, etc.)
 target_id|	VARCHAR(255)|	Target entity ID (optional)
 details	TEXT|	Additional details about the action
 created_at|	TIMESTAMP	When the action was performed
+
+### Table: video_vault
+Column|	Type|	Description|
+id|	UUID|	Primary key|
+title|	VARCHAR(255)|	Video title (not null)|
+description|	TEXT|	Video description|
+category|	VARCHAR(50)|	Video category (not null)|
+video_url|	VARCHAR(500)|	URL to the video (not null)|
+thumbnail_url|	VARCHAR(500)|	URL to thumbnail image|
+duration|	INTEGER	Video duration in seconds|
+is_offline_available|	BOOLEAN|	Whether video is available offline|
+view_count|	BIGINT|	Number of views
+created_at|	TIMESTAMP|	When the video was uploaded|
+updated_at|	TIMESTAMP|	Last update time|
+
+### Table: video_tags
+Column|	Type|	Description|
+video_id|	UUID|	Foreign key to video_vault|
+tag|	VARCHAR(50)|	Tag name (not null)|
+
+### Foreign Key:
+video_id references video_vault(id) on DELETE CASCADE

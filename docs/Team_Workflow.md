@@ -7,7 +7,7 @@
 |Admin Service| Emmanuel Narh/ Nana Kwadwo|adminservice/ | User management, audit logs, dashboard stats, system health
 | Auth Service | Emmanuel Narh | `auth-service/` | Login, Register, JWT, User profiles |
 | News Service | Emmanuel Narh | `news-service/` | Health ticker, external news API |
-| Media Service | Member 4 | `media-service/` | Video upload, streaming, storage |
+| Media Service | Daniel Acheampong/ Emmanuel Narh | `media-service/` | Video upload, streaming, storage |
 | Translate Service | Member 5 | `translate-service/` | Text translation, sign language mapping |
 |Documentation| Emmanuel Narh|`docs/`| documentaion|
 

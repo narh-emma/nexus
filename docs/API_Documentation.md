@@ -55,8 +55,16 @@ GET|	`/admin/system/info`|	System information|	Admin Only
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/media/first-aid` | List first-aid videos | Yes |
-| POST | `/media/first-aid` | Upload video (Admin) | Yes |
+GET|	/media/first-aid|	Get all first-aid videos|	No|
+GET|	/media/first-aid/{id}|	Get first-aid video by ID|	No|
+POST|	/media/first-aid|	Upload a new first-aid video|	Admin Only|
+PATCH|	/media/first-aid/{id}|	Update video metadata|	Admin Only|
+DELETE|	/media/first-aid/{id}|	Delete a video|	Admin Only|
+POST|	/media/first-aid/{id}/view|	Increment video view count|	No|
+GET|	/media/categories|	Get all video categories|	No|
+GET|	/media/search|	Search videos by title/tags|	No|
+GET|	/media/most-viewed|	Get most viewed videos|	No|
+GET|	/media/offline-bundle|	Get offline available videos|	No|
 
 ### Translate Service (Coming Soon)
 
