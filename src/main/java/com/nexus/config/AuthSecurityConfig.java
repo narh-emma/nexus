@@ -41,7 +41,7 @@ public class AuthSecurityConfig {
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/health",
                     "/api/v1/auth/verify",
-                    "/api/v1/auth/password/**",      // ← ADDED - covers reset-request and reset
+                    "/api/v1/auth/password/**",
                     
                     // News Service (GET only)
                     "/api/v1/health/news",
@@ -90,6 +90,9 @@ public class AuthSecurityConfig {
                 // ===== AUTHENTICATED - VALID JWT REQUIRED
                 // ============================================
                 .requestMatchers(
+                    // Profile Service
+                    "/api/v1/profile/**",           // ← ADDED
+                    
                     // Translate Service
                     "/api/v1/translate/text-to-text",
                     "/api/v1/translate/text-to-sign",
