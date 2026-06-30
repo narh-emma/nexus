@@ -3,9 +3,11 @@ package com.nexus.authservice.controller;
 import com.nexus.authservice.dto.LoginRequest;
 import com.nexus.authservice.dto.LoginResponse;
 import com.nexus.authservice.dto.RegisterRequest;
+import com.nexus.authservice.model.RefreshToken;
 import com.nexus.authservice.model.User;
 import com.nexus.authservice.service.AuthService;
 import com.nexus.authservice.service.LogoutService;
+import com.nexus.authservice.service.RefreshTokenService;
 import com.nexus.authservice.utils.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +33,10 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private LogoutService logoutService;  // ← ADDED
+    private LogoutService logoutService;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;  // ← ADDED
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user (USER or ADMIN)")
@@ -63,12 +68,16 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Login and receive a JWT token")
+    @Operation(summary = "Login and receive JWT tokens")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             User loggedUser = authService.login(request.getEmail(), request.getPassword());
             
-            String token = jwtUtil.generateToken(loggedUser.getEmail(), loggedUser.getRole());
+            // Generate access token (24 hours)
+            String accessToken = jwtUtil.generateToken(loggedUser.getEmail(), loggedUser.getRole());
+            
+            // Generate refresh token (7 days)
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(loggedUser.getEmail());
 
             return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -76,7 +85,37 @@ public class AuthController {
                 "email", loggedUser.getEmail(),
                 "fullName", loggedUser.getFullName(),
                 "role", loggedUser.getRole(),
-                "token", token,
+                "accessToken", accessToken,
+                "refreshToken", refreshToken.getToken(),
+                "expiresIn", 86400000  // 24 hours in milliseconds
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token using refresh token")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        try {
+            String refreshToken = request.get("refreshToken");
+            
+            if (refreshToken == null || refreshToken.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "error", "Refresh token is required"));
+            }
+
+            // Verify refresh token
+            Map<String, Object> verification = refreshTokenService.verifyRefreshToken(refreshToken);
+            User user = (User) verification.get("user");
+
+            // Generate new access token
+            String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getRole());
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "accessToken", newAccessToken,
                 "expiresIn", 86400000
             ));
         } catch (RuntimeException e) {
