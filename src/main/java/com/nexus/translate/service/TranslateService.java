@@ -1,5 +1,6 @@
 package com.nexus.translate.service;
 
+import com.nexus.translate.dto.TranslationRequest;
 import com.nexus.translate.model.SignDictionary;
 import com.nexus.translate.model.TranslationLog;
 import com.nexus.translate.repository.SignDictionaryRepository;
@@ -162,6 +163,168 @@ public class TranslateService {
         }
     }
 
+    // ==================== MULTIMODAL TRANSLATION ====================
+
+    public Map<String, Object> multimodalTranslation(TranslationRequest request, UUID userId) {
+        long startTime = System.currentTimeMillis();
+        
+        String sourceModality = request.getSourceModality();
+        String targetModality = request.getTargetModality();
+        String sourceLang = request.getSourceLanguage();
+        String targetLang = request.getTargetLanguage();
+        
+        // Default values
+        if (sourceModality == null || sourceModality.isEmpty()) sourceModality = "text";
+        if (targetModality == null || targetModality.isEmpty()) targetModality = "text";
+        if (sourceLang == null || sourceLang.isEmpty()) sourceLang = "en";
+        if (targetLang == null || targetLang.isEmpty()) targetLang = "en";
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Route based on source and target modalities
+            if (sourceModality.equals("text") && targetModality.equals("text")) {
+                // Text → Text
+                String inputText = request.getText();
+                if (inputText == null) inputText = request.getPayload();
+                if (inputText == null) {
+                    throw new RuntimeException("Text input is required for text-to-text translation");
+                }
+                
+                String translatedText = mockTranslate(inputText, sourceLang, targetLang);
+                
+                result.put("translatedText", translatedText);
+                result.put("sourceModality", "text");
+                result.put("targetModality", "text");
+                result.put("sourceLanguage", sourceLang);
+                result.put("targetLanguage", targetLang);
+                
+            } else if (sourceModality.equals("text") && targetModality.equals("sign")) {
+                // Text → Sign
+                String inputText = request.getText();
+                if (inputText == null) inputText = request.getPayload();
+                if (inputText == null) {
+                    throw new RuntimeException("Text input is required for text-to-sign translation");
+                }
+                
+                String signDialect = request.getSignDialect();
+                if (signDialect == null) signDialect = "ASL";
+                
+                // Get sign mappings
+                List<SignDictionary> dictionary = dictionaryRepository.findByLanguage(targetLang);
+                String animation = generateSignAnimation(inputText, dictionary, signDialect);
+                
+                result.put("translatedText", inputText);
+                result.put("signAnimation", animation);
+                result.put("signDialect", signDialect);
+                result.put("sourceModality", "text");
+                result.put("targetModality", "sign");
+                result.put("sourceLanguage", sourceLang);
+                result.put("targetLanguage", targetLang);
+                
+            } else if (sourceModality.equals("speech") && targetModality.equals("text")) {
+                // Speech → Text
+                String audioUrl = request.getAudioUrl();
+                if (audioUrl == null) {
+                    throw new RuntimeException("Audio URL is required for speech-to-text translation");
+                }
+                
+                String transcribedText = mockSpeechToText(audioUrl, sourceLang);
+                
+                result.put("transcribedText", transcribedText);
+                result.put("sourceModality", "speech");
+                result.put("targetModality", "text");
+                result.put("sourceLanguage", sourceLang);
+                result.put("targetLanguage", targetLang);
+                
+            } else if (sourceModality.equals("speech") && targetModality.equals("sign")) {
+                // Speech → Sign
+                String audioUrl = request.getAudioUrl();
+                if (audioUrl == null) {
+                    throw new RuntimeException("Audio URL is required for speech-to-sign translation");
+                }
+                
+                String transcribedText = mockSpeechToText(audioUrl, sourceLang);
+                String signDialect = request.getSignDialect();
+                if (signDialect == null) signDialect = "ASL";
+                
+                List<SignDictionary> dictionary = dictionaryRepository.findByLanguage(targetLang);
+                String animation = generateSignAnimation(transcribedText, dictionary, signDialect);
+                
+                result.put("transcribedText", transcribedText);
+                result.put("signAnimation", animation);
+                result.put("signDialect", signDialect);
+                result.put("sourceModality", "speech");
+                result.put("targetModality", "sign");
+                result.put("sourceLanguage", sourceLang);
+                result.put("targetLanguage", targetLang);
+                
+            } else if (sourceModality.equals("sign") && targetModality.equals("text")) {
+                // Sign → Text
+                String videoUrl = request.getVideoUrl();
+                if (videoUrl == null) {
+                    throw new RuntimeException("Video URL is required for sign-to-text translation");
+                }
+                
+                String signDialect = request.getSignDialect();
+                if (signDialect == null) signDialect = "ASL";
+                
+                String translatedText = mockSignToText(videoUrl, signDialect);
+                
+                result.put("translatedText", translatedText);
+                result.put("signDialect", signDialect);
+                result.put("sourceModality", "sign");
+                result.put("targetModality", "text");
+                result.put("sourceLanguage", sourceLang);
+                result.put("targetLanguage", targetLang);
+                
+            } else if (sourceModality.equals("sign") && targetModality.equals("sign")) {
+                // Sign → Sign (same language translation)
+                String videoUrl = request.getVideoUrl();
+                if (videoUrl == null) {
+                    throw new RuntimeException("Video URL is required for sign-to-sign translation");
+                }
+                
+                result.put("message", "Sign to sign translation uses the same sign language");
+                result.put("videoUrl", videoUrl);
+                result.put("sourceModality", "sign");
+                result.put("targetModality", "sign");
+                result.put("sourceLanguage", sourceLang);
+                result.put("targetLanguage", targetLang);
+                
+            } else {
+                throw new RuntimeException("Unsupported modality combination: " + sourceModality + " → " + targetModality);
+            }
+            
+            // Calculate latency
+            int latencyMs = (int) (System.currentTimeMillis() - startTime);
+            result.put("latencyMs", latencyMs);
+            result.put("success", true);
+            
+            // Log translation
+            TranslationLog log = new TranslationLog();
+            log.setUserId(userId);
+            log.setSourceModality(sourceModality);
+            log.setTargetModality(targetModality);
+            log.setSourceLanguage(sourceLang);
+            log.setTargetLanguage(targetLang);
+            log.setInputText(request.getText() != null ? request.getText() : request.getPayload());
+            log.setOutputPayload(result.toString());
+            log.setLatencyMs(latencyMs);
+            log.setCreatedAt(LocalDateTime.now());
+            logRepository.save(log);
+            
+            return result;
+            
+        } catch (Exception e) {
+            return Map.of(
+                "success", false,
+                "error", e.getMessage(),
+                "latencyMs", (int) (System.currentTimeMillis() - startTime)
+            );
+        }
+    }
+
     // ==================== DICTIONARY METHODS ====================
 
     public List<SignDictionary> getDictionary() {
@@ -249,6 +412,29 @@ public class TranslateService {
     private String generateSignAnimation(String text, List<SignDictionary> dictionary) {
         if (dictionary.isEmpty()) {
             return "No sign mappings found for the given language";
+        }
+
+        Map<String, String> signMap = dictionary.stream()
+            .collect(Collectors.toMap(
+                SignDictionary::getWord,
+                SignDictionary::getSignVideoUrl,
+                (existing, replacement) -> existing
+            ));
+
+        String[] words = text.split(" ");
+        List<String> signs = new ArrayList<>();
+        for (String word : words) {
+            String cleanWord = word.toLowerCase().replaceAll("[^a-zA-Z]", "");
+            String sign = signMap.getOrDefault(cleanWord, "UNKNOWN_SIGN");
+            signs.add(sign);
+        }
+
+        return String.join(" ", signs);
+    }
+
+    private String generateSignAnimation(String text, List<SignDictionary> dictionary, String dialect) {
+        if (dictionary.isEmpty()) {
+            return "No sign mappings found for " + dialect;
         }
 
         Map<String, String> signMap = dictionary.stream()

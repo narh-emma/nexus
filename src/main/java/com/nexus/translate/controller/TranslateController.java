@@ -1,6 +1,7 @@
 package com.nexus.translate.controller;
 
 import com.nexus.authservice.utils.JwtUtil;
+import com.nexus.translate.dto.TranslationRequest;
 import com.nexus.translate.model.SignDictionary;
 import com.nexus.translate.model.TranslationLog;
 import com.nexus.translate.service.TranslateService;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -123,18 +125,43 @@ public class TranslateController {
         }
     }
 
+    // ===== MULTIMODAL TRANSLATION (UPDATED - Uses TranslationRequest DTO) =====
     @PostMapping("/multimodal")
     @Operation(summary = "Multi-modal translation (text, speech, sign)")
-    public ResponseEntity<?> translateMultimodal(
-            @RequestBody Map<String, Object> request,
+    public ResponseEntity<?> multimodalTranslation(
+            @RequestBody TranslationRequest request,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
+            // Extract user ID from token
             UUID userId = extractUserId(authHeader);
-            Map<String, Object> result = translateService.processMultimodalTranslation(request, userId);
-            return ResponseEntity.ok(result);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "error", "Authentication required"));
+            }
+            
+            Map<String, Object> result = translateService.multimodalTranslation(request, userId);
+            
+            if ((boolean) result.getOrDefault("success", false)) {
+                return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "data", result,
+                    "timestamp", LocalDateTime.now()
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                        "success", false,
+                        "error", result.get("error"),
+                        "timestamp", LocalDateTime.now()
+                    ));
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "error", e.getMessage()));
+                .body(Map.of(
+                    "success", false,
+                    "error", e.getMessage(),
+                    "timestamp", LocalDateTime.now()
+                ));
         }
     }
 
