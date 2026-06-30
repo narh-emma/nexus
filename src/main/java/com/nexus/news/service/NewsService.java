@@ -5,6 +5,8 @@ import com.nexus.news.repo.NewsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,6 +15,9 @@ public class NewsService {
 
     @Autowired
     private NewsRepository newsRepository;
+
+    @Autowired
+    private ExternalNewsService externalNewsService;
 
     public List<HealthTicker> getLatestNews(String language, String category) {
         if (language != null && category != null) {
@@ -35,6 +40,7 @@ public class NewsService {
     }
 
     public HealthTicker publishHeadline(HealthTicker ticker) {
+        ticker.setFetchedAt(LocalDateTime.now());
         return newsRepository.save(ticker);
     }
 
@@ -45,13 +51,28 @@ public class NewsService {
         newsRepository.deleteById(id);
     }
 
-    @Scheduled(fixedRate = 900000)
+    // ===== SCHEDULED NEWS FETCHING =====
+    
+    @Scheduled(fixedRate = 900000) // Every 15 minutes
     public void fetchExternalNews() {
-        seedSampleNewsIfEmpty();
+        // First, check if database is empty
+        if (newsRepository.count() == 0) {
+            seedSampleNewsIfEmpty();
+        }
+        
+        // Then fetch from external API
+        try {
+            externalNewsService.fetchFromMultipleSources();
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching external news: " + e.getMessage());
+        }
     }
 
     public void seedSampleNewsIfEmpty() {
         if (newsRepository.count() > 0) return;
+
+        // Only seed if there's no news AND external API failed
+        System.out.println("📰 Seeding sample news (database empty)");
 
         newsRepository.save(new HealthTicker(
             "WHO Issues Global Health Advisory on Respiratory Infections",
@@ -78,5 +99,12 @@ public class NewsService {
             "Cool the burn under running water for 20 minutes. Do not apply ice or butter.",
             "Red Cross", "https://www.redcross.org", "en", "first_aid", 0
         ));
+    }
+
+    /**
+     * Force fetch news from external API (admin endpoint)
+     */
+    public int forceFetchNews() {
+        return externalNewsService.fetchAndSaveNews("health", "en");
     }
 }
