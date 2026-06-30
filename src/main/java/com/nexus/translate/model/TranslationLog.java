@@ -1,26 +1,25 @@
 package com.nexus.translate.model;
 
 import jakarta.persistence.*;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "translation_log")
+@Table(name = "translation_logs")
 public class TranslationLog {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "log_id")
-    private UUID logId;
+    private UUID id;
 
     @Column(name = "user_id")
     private UUID userId;
 
     @Column(name = "source_modality")
-    private String sourceModality;
+    private String sourceModality; // text, speech, sign
 
     @Column(name = "target_modality")
-    private String targetModality;
+    private String targetModality; // text, sign, speech
 
     @Column(name = "source_language")
     private String sourceLanguage;
@@ -31,21 +30,21 @@ public class TranslationLog {
     @Column(name = "input_text", columnDefinition = "TEXT")
     private String inputText;
 
-    @Column(name = "output_payload", columnDefinition = "jsonb")
+    @Column(name = "output_payload", columnDefinition = "TEXT")
     private String outputPayload;
 
     @Column(name = "latency_ms")
-    private Integer latencyMs;
+    private int latencyMs;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     // Constructors
     public TranslationLog() {}
 
-    // Explicit Setters and Getters needed by TranslateService
-    public UUID getLogId() { return logId; }
-    public void setLogId(UUID logId) { this.logId = logId; }
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
@@ -68,9 +67,9 @@ public class TranslationLog {
     public String getOutputPayload() { return outputPayload; }
     public void setOutputPayload(String outputPayload) { this.outputPayload = outputPayload; }
 
-    public Integer getLatencyMs() { return latencyMs; }
-    public void setLatencyMs(Integer latencyMs) { this.latencyMs = latencyMs; }
+    public int getLatencyMs() { return latencyMs; }
+    public void setLatencyMs(int latencyMs) { this.latencyMs = latencyMs; }
 
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

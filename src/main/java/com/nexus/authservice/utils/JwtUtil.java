@@ -58,6 +58,14 @@ public class JwtUtil {
             return false;
         }
     }
+        // ===== EXTRACT EXPIRATION DATE =====
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
 
     // ===== EXTRACT EMAIL =====
     public String extractEmail(String token) {

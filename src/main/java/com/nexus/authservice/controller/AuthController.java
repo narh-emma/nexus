@@ -5,6 +5,7 @@ import com.nexus.authservice.dto.LoginResponse;
 import com.nexus.authservice.dto.RegisterRequest;
 import com.nexus.authservice.model.User;
 import com.nexus.authservice.service.AuthService;
+import com.nexus.authservice.service.LogoutService;
 import com.nexus.authservice.utils.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Map;
 
 @RestController
@@ -27,6 +29,9 @@ public class AuthController {
     @Autowired
     @Qualifier("authJwtUtil")
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private LogoutService logoutService;  // ← ADDED
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user (USER or ADMIN)")
@@ -63,7 +68,6 @@ public class AuthController {
         try {
             User loggedUser = authService.login(request.getEmail(), request.getPassword());
             
-            // ===== FIXED: Generate token WITH role =====
             String token = jwtUtil.generateToken(loggedUser.getEmail(), loggedUser.getRole());
 
             return ResponseEntity.ok(Map.of(
@@ -108,5 +112,59 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(Map.of("valid", false, "error", "Token is invalid or expired"));
+    }
+
+    // ==================== LOGOUT ENDPOINTS ====================
+
+    @PostMapping("/logout")
+    @Operation(summary = "Logout - invalidate JWT token")
+    public ResponseEntity<?> logout(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("success", false, "error", "Missing or invalid Authorization header"));
+        }
+
+        String token = authHeader.substring(7);
+        
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("success", false, "error", "Invalid token"));
+        }
+
+        String email = jwtUtil.extractEmail(token);
+        logoutService.logout(token, email);
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Logged out successfully"
+        ));
+    }
+
+    @PostMapping("/logout-all")
+    @Operation(summary = "Logout from all devices")
+    public ResponseEntity<?> logoutAllDevices(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("success", false, "error", "Missing or invalid Authorization header"));
+        }
+
+        String token = authHeader.substring(7);
+        
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("success", false, "error", "Invalid token"));
+        }
+
+        String email = jwtUtil.extractEmail(token);
+        logoutService.logoutAllDevices(email);
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Logged out from all devices successfully"
+        ));
     }
 }

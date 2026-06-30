@@ -1,37 +1,58 @@
 package com.nexus.translate.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.CreationTimestamp;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "sign_dictionary")
 public class SignDictionary {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "sign_id", updatable = false, nullable = false)
-    private UUID signId;
+    private UUID id;
 
-    @NotNull
-    @Column(length = 100, unique = true, nullable = false)
-    private String gloss;
+    @Column(nullable = false)
+    private String word;
 
-    @Column(length = 20)
-    private String dialect = "ASL";
+    @Column(name = "sign_video_url", nullable = false)
+    private String signVideoUrl;
 
-    @NotNull
-    @Column(name = "animation_key", length = 120, nullable = false)
-    private String animationKey;
+    @Column(nullable = false)
+    private String language; // ASL, BSL, etc.
 
-    @Column(name = "medical_tag", length = 50)
-    private String medicalTag;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    // Getters, Setters, Constructors
+    // Constructors
+    public SignDictionary() {}
+
+    public SignDictionary(String word, String signVideoUrl, String language) {
+        this.word = word;
+        this.signVideoUrl = signVideoUrl;
+        this.language = language;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getWord() { return word; }
+    public void setWord(String word) { this.word = word; }
+
+    public String getSignVideoUrl() { return signVideoUrl; }
+    public void setSignVideoUrl(String signVideoUrl) { this.signVideoUrl = signVideoUrl; }
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
