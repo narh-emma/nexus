@@ -25,6 +25,72 @@ public class TranslateService {
     @Autowired
     private GroqService groqService;
 
+    // ==================== ELEVENLABS VOICE ID CONFIGURATION ====================
+    private static final Map<String, List<Map<String, String>>> LANGUAGE_VOICES = new HashMap<>();
+
+    static {
+        List<Map<String, String>> enVoices = new ArrayList<>();
+        enVoices.add(Map.of("id", "21m00Tcm4TlvDq8ikWAM", "name", "Rachel (Female)"));
+        enVoices.add(Map.of("id", "AZnzlk1XvdvUeBnXmlld", "name", "Domi (Female)"));
+        enVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Female)"));
+        enVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Male)"));
+        enVoices.add(Map.of("id", "TxGEywOCnUeX31gOM0jB", "name", "Liam (Male)"));
+        LANGUAGE_VOICES.put("en", enVoices);
+
+        List<Map<String, String>> esVoices = new ArrayList<>();
+        esVoices.add(Map.of("id", "FGY266Ew3S6t6gfI7UuG", "name", "Marcelo (Male / Spanish)"));
+        esVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Multilingual)"));
+        LANGUAGE_VOICES.put("es", esVoices);
+
+        List<Map<String, String>> frVoices = new ArrayList<>();
+        frVoices.add(Map.of("id", "21m00Tcm4TlvDq8ikWAM", "name", "Rachel (Multilingual)"));
+        frVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Multilingual)"));
+        LANGUAGE_VOICES.put("fr", frVoices);
+
+        List<Map<String, String>> deVoices = new ArrayList<>();
+        deVoices.add(Map.of("id", "AZnzlk1XvdvUeBnXmlld", "name", "Domi (Multilingual)"));
+        deVoices.add(Map.of("id", "TxGEywOCnUeX31gOM0jB", "name", "Liam (Multilingual)"));
+        LANGUAGE_VOICES.put("de", deVoices);
+
+        List<Map<String, String>> itVoices = new ArrayList<>();
+        itVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Multilingual)"));
+        LANGUAGE_VOICES.put("it", itVoices);
+
+        List<Map<String, String>> ptVoices = new ArrayList<>();
+        ptVoices.add(Map.of("id", "21m00Tcm4TlvDq8ikWAM", "name", "Rachel (Multilingual)"));
+        LANGUAGE_VOICES.put("pt", ptVoices);
+
+        List<Map<String, String>> zhVoices = new ArrayList<>();
+        zhVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Multilingual)"));
+        LANGUAGE_VOICES.put("zh", zhVoices);
+
+        List<Map<String, String>> jaVoices = new ArrayList<>();
+        jaVoices.add(Map.of("id", "AZnzlk1XvdvUeBnXmlld", "name", "Domi (Multilingual)"));
+        LANGUAGE_VOICES.put("ja", jaVoices);
+
+        List<Map<String, String>> koVoices = new ArrayList<>();
+        koVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Multilingual)"));
+        LANGUAGE_VOICES.put("ko", koVoices);
+
+        List<Map<String, String>> arVoices = new ArrayList<>();
+        arVoices.add(Map.of("id", "TxGEywOCnUeX31gOM0jB", "name", "Liam (Multilingual)"));
+        LANGUAGE_VOICES.put("ar", arVoices);
+
+        List<Map<String, String>> ruVoices = new ArrayList<>();
+        ruVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Multilingual)"));
+        LANGUAGE_VOICES.put("ru", ruVoices);
+    }
+
+    private static final String DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+
+    private String getDefaultVoiceForLanguage(String langCode) {
+        List<Map<String, String>> voices = LANGUAGE_VOICES.get(langCode != null ? langCode.toLowerCase() : "en");
+        if (voices != null && !voices.isEmpty()) {
+            return voices.get(0).get("id");
+        }
+        return DEFAULT_VOICE_ID;
+    }
+
     // ==================== TEXT-TO-TEXT TRANSLATION ====================
 
     public Map<String, Object> translateTextToText(String text, String sourceLang, String targetLang, UUID userId) {
@@ -141,13 +207,15 @@ public class TranslateService {
 
     // ==================== TEXT-TO-SPEECH ====================
 
-    public Map<String, Object> textToSpeech(String text, String voice, UUID userId) {
+    public Map<String, Object> textToSpeech(String text, String voice, String language, UUID userId) {
         long startTime = System.currentTimeMillis();
 
         try {
-            byte[] audioData = groqService.textToSpeech(text, voice);
+            String resolvedVoiceId = (voice != null && !voice.trim().isEmpty()) ? voice : getDefaultVoiceForLanguage(language);
+
+            byte[] audioData = groqService.textToSpeech(text, resolvedVoiceId);
             
-            if (audioData.length == 0) {
+            if (audioData == null || audioData.length == 0) {
                 throw new RuntimeException("Failed to generate speech");
             }
 
@@ -158,8 +226,8 @@ public class TranslateService {
             log.setUserId(userId);
             log.setSourceModality("text");
             log.setTargetModality("speech");
-            log.setSourceLanguage("en");
-            log.setTargetLanguage("en");
+            log.setSourceLanguage(language != null ? language : "en");
+            log.setTargetLanguage(language != null ? language : "en");
             log.setInputText(text);
             log.setOutputPayload(audioUrl);
             log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
@@ -171,7 +239,7 @@ public class TranslateService {
                 "data", Map.of(
                     "text", text,
                     "audioUrl", audioUrl,
-                    "voice", voice != null ? voice : "default"
+                    "voice", resolvedVoiceId
                 ),
                 "latencyMs", log.getLatencyMs()
             );
@@ -181,6 +249,10 @@ public class TranslateService {
                 "error", "Text-to-speech failed: " + e.getMessage()
             );
         }
+    }
+
+    public Map<String, Object> textToSpeech(String text, String voice, UUID userId) {
+        return textToSpeech(text, voice, "en", userId);
     }
 
     // ==================== PROCESS MULTIMODAL TRANSLATION ====================
@@ -388,22 +460,26 @@ public class TranslateService {
     // ==================== SUPPORTED LANGUAGES ====================
 
     public List<Map<String, String>> getSupportedLanguages() {
-        return List.of(
-            Map.of("code", "en", "name", "English"),
-            Map.of("code", "es", "name", "Spanish"),
-            Map.of("code", "fr", "name", "French"),
-            Map.of("code", "de", "name", "German"),
-            Map.of("code", "it", "name", "Italian"),
-            Map.of("code", "pt", "name", "Portuguese"),
-            Map.of("code", "zh", "name", "Chinese"),
-            Map.of("code", "ja", "name", "Japanese"),
-            Map.of("code", "ko", "name", "Korean"),
-            Map.of("code", "ar", "name", "Arabic"),
-            Map.of("code", "ru", "name", "Russian"),
-            Map.of("code", "ASL", "name", "American Sign Language"),
-            Map.of("code", "BSL", "name", "British Sign Language"),
-            Map.of("code", "AUSLAN", "name", "Australian Sign Language")
-        );
+        List<Map<String, String>> languages = new ArrayList<>();
+        languages.add(Map.of("code", "en", "name", "English"));
+        languages.add(Map.of("code", "es", "name", "Spanish"));
+        languages.add(Map.of("code", "fr", "name", "French"));
+        languages.add(Map.of("code", "de", "name", "German"));
+        languages.add(Map.of("code", "it", "name", "Italian"));
+        languages.add(Map.of("code", "pt", "name", "Portuguese"));
+        languages.add(Map.of("code", "zh", "name", "Chinese"));
+        languages.add(Map.of("code", "ja", "name", "Japanese"));
+        languages.add(Map.of("code", "ko", "name", "Korean"));
+        languages.add(Map.of("code", "ar", "name", "Arabic"));
+        languages.add(Map.of("code", "ru", "name", "Russian"));
+        languages.add(Map.of("code", "ASL", "name", "American Sign Language"));
+        languages.add(Map.of("code", "BSL", "name", "British Sign Language"));
+        languages.add(Map.of("code", "AUSLAN", "name", "Australian Sign Language"));
+        return languages;
+    }
+
+    public Map<String, List<Map<String, String>>> getElevenLabsVoices() {
+        return LANGUAGE_VOICES;
     }
 
     // ==================== PRIVATE HELPER METHODS ====================
