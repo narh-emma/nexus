@@ -7,6 +7,7 @@ import com.nexus.translate.repository.SignDictionaryRepository;
 import com.nexus.translate.repository.TranslationLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -21,37 +22,49 @@ public class TranslateService {
     @Autowired
     private SignDictionaryRepository dictionaryRepository;
 
-    // ==================== TRANSLATION METHODS ====================
+    @Autowired
+    private HuggingFaceService huggingFaceService;
+
+    // ==================== TEXT-TO-TEXT TRANSLATION ====================
 
     public Map<String, Object> translateTextToText(String text, String sourceLang, String targetLang, UUID userId) {
         long startTime = System.currentTimeMillis();
 
-        // Mock translation - replace with actual translation API
-        String translatedText = mockTranslate(text, sourceLang, targetLang);
+        try {
+            // ===== USE HUGGING FACE FOR TRANSLATION =====
+            String translatedText = huggingFaceService.translateText(text, targetLang, sourceLang);
 
-        TranslationLog log = new TranslationLog();
-        log.setUserId(userId);
-        log.setSourceModality("text");
-        log.setTargetModality("text");
-        log.setSourceLanguage(sourceLang);
-        log.setTargetLanguage(targetLang);
-        log.setInputText(text);
-        log.setOutputPayload(translatedText);
-        log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
-        log.setCreatedAt(LocalDateTime.now());
-        logRepository.save(log);
+            TranslationLog log = new TranslationLog();
+            log.setUserId(userId);
+            log.setSourceModality("text");
+            log.setTargetModality("text");
+            log.setSourceLanguage(sourceLang);
+            log.setTargetLanguage(targetLang);
+            log.setInputText(text);
+            log.setOutputPayload(translatedText);
+            log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
+            log.setCreatedAt(LocalDateTime.now());
+            logRepository.save(log);
 
-        return Map.of(
-            "success", true,
-            "data", Map.of(
-                "originalText", text,
-                "translatedText", translatedText,
-                "sourceLanguage", sourceLang,
-                "targetLanguage", targetLang
-            ),
-            "latencyMs", log.getLatencyMs()
-        );
+            return Map.of(
+                "success", true,
+                "data", Map.of(
+                    "originalText", text,
+                    "translatedText", translatedText,
+                    "sourceLanguage", sourceLang,
+                    "targetLanguage", targetLang
+                ),
+                "latencyMs", log.getLatencyMs()
+            );
+        } catch (Exception e) {
+            return Map.of(
+                "success", false,
+                "error", "Translation failed: " + e.getMessage()
+            );
+        }
     }
+
+    // ==================== TEXT-TO-SIGN ====================
 
     public Map<String, Object> textToSign(String text, String language, UUID userId) {
         long startTime = System.currentTimeMillis();
@@ -82,36 +95,49 @@ public class TranslateService {
         );
     }
 
-    public Map<String, Object> speechToText(String audioUrl, String language, UUID userId) {
+    // ==================== SPEECH-TO-TEXT ====================
+
+    public Map<String, Object> speechToText(MultipartFile audioFile, String language, UUID userId) {
         long startTime = System.currentTimeMillis();
 
-        String transcribedText = mockSpeechToText(audioUrl, language);
+        try {
+            // ===== USE HUGGING FACE WHISPER =====
+            String transcribedText = huggingFaceService.transcribeAudio(audioFile);
 
-        TranslationLog log = new TranslationLog();
-        log.setUserId(userId);
-        log.setSourceModality("speech");
-        log.setTargetModality("text");
-        log.setSourceLanguage(language);
-        log.setTargetLanguage("en");
-        log.setInputText(audioUrl);
-        log.setOutputPayload(transcribedText);
-        log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
-        log.setCreatedAt(LocalDateTime.now());
-        logRepository.save(log);
+            TranslationLog log = new TranslationLog();
+            log.setUserId(userId);
+            log.setSourceModality("speech");
+            log.setTargetModality("text");
+            log.setSourceLanguage(language);
+            log.setTargetLanguage("en");
+            log.setInputText(audioFile.getOriginalFilename());
+            log.setOutputPayload(transcribedText);
+            log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
+            log.setCreatedAt(LocalDateTime.now());
+            logRepository.save(log);
 
-        return Map.of(
-            "success", true,
-            "data", Map.of(
-                "transcribedText", transcribedText,
-                "language", language
-            ),
-            "latencyMs", log.getLatencyMs()
-        );
+            return Map.of(
+                "success", true,
+                "data", Map.of(
+                    "transcribedText", transcribedText,
+                    "language", language
+                ),
+                "latencyMs", log.getLatencyMs()
+            );
+        } catch (Exception e) {
+            return Map.of(
+                "success", false,
+                "error", "Speech-to-text failed: " + e.getMessage()
+            );
+        }
     }
+
+    // ==================== SIGN-TO-TEXT ====================
 
     public Map<String, Object> signToText(String videoUrl, String language, UUID userId) {
         long startTime = System.currentTimeMillis();
 
+        // TODO: Replace with actual sign language recognition
         String translatedText = mockSignToText(videoUrl, language);
 
         TranslationLog log = new TranslationLog();
@@ -136,6 +162,54 @@ public class TranslateService {
         );
     }
 
+    // ==================== TEXT-TO-SPEECH ====================
+
+    public Map<String, Object> textToSpeech(String text, String voice, UUID userId) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // ===== USE HUGGING FACE TTS =====
+            byte[] audioData = huggingFaceService.textToSpeech(text, voice);
+            
+            if (audioData.length == 0) {
+                throw new RuntimeException("Failed to generate speech");
+            }
+
+            // Save audio file
+            String fileName = "speech_" + UUID.randomUUID() + ".mp3";
+            String audioUrl = huggingFaceService.saveAudioToFile(audioData, fileName);
+
+            TranslationLog log = new TranslationLog();
+            log.setUserId(userId);
+            log.setSourceModality("text");
+            log.setTargetModality("speech");
+            log.setSourceLanguage("en");
+            log.setTargetLanguage("en");
+            log.setInputText(text);
+            log.setOutputPayload(audioUrl);
+            log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
+            log.setCreatedAt(LocalDateTime.now());
+            logRepository.save(log);
+
+            return Map.of(
+                "success", true,
+                "data", Map.of(
+                    "text", text,
+                    "audioUrl", audioUrl,
+                    "voice", voice != null ? voice : "default"
+                ),
+                "latencyMs", log.getLatencyMs()
+            );
+        } catch (Exception e) {
+            return Map.of(
+                "success", false,
+                "error", "Text-to-speech failed: " + e.getMessage()
+            );
+        }
+    }
+
+    // ==================== PROCESS MULTIMODAL TRANSLATION ====================
+
     public Map<String, Object> processMultimodalTranslation(Map<String, Object> request, UUID userId) {
         String sourceModality = (String) request.get("sourceModality");
         String targetModality = (String) request.get("targetModality");
@@ -152,7 +226,11 @@ public class TranslateService {
         } else if (sourceModality.equals("text") && targetModality.equals("sign")) {
             return textToSign(text, targetLang != null ? targetLang : "ASL", userId);
         } else if (sourceModality.equals("speech") && targetModality.equals("text")) {
-            return speechToText(text, sourceLang != null ? sourceLang : "en-US", userId);
+            // For speech, we need to handle file upload differently
+            return Map.of(
+                "success", false,
+                "error", "Please use /speech-to-text endpoint for file upload"
+            );
         } else if (sourceModality.equals("sign") && targetModality.equals("text")) {
             return signToText(text, sourceLang != null ? sourceLang : "ASL", userId);
         } else {
@@ -163,7 +241,7 @@ public class TranslateService {
         }
     }
 
-    // ==================== MULTIMODAL TRANSLATION ====================
+    // ==================== MULTIMODAL TRANSLATION (With DTO) ====================
 
     public Map<String, Object> multimodalTranslation(TranslationRequest request, UUID userId) {
         long startTime = System.currentTimeMillis();
@@ -191,7 +269,7 @@ public class TranslateService {
                     throw new RuntimeException("Text input is required for text-to-text translation");
                 }
                 
-                String translatedText = mockTranslate(inputText, sourceLang, targetLang);
+                String translatedText = huggingFaceService.translateText(inputText, targetLang, sourceLang);
                 
                 result.put("translatedText", translatedText);
                 result.put("sourceModality", "text");
@@ -229,7 +307,9 @@ public class TranslateService {
                     throw new RuntimeException("Audio URL is required for speech-to-text translation");
                 }
                 
-                String transcribedText = mockSpeechToText(audioUrl, sourceLang);
+                // For URL-based audio, you'd need to download first
+                // This is a placeholder
+                String transcribedText = "[Speech to text from URL: " + audioUrl + "]";
                 
                 result.put("transcribedText", transcribedText);
                 result.put("sourceModality", "speech");
@@ -244,15 +324,12 @@ public class TranslateService {
                     throw new RuntimeException("Audio URL is required for speech-to-sign translation");
                 }
                 
-                String transcribedText = mockSpeechToText(audioUrl, sourceLang);
+                // This is a placeholder - in reality, you'd transcribe first then convert to sign
+                String transcribedText = "[Speech to sign from URL: " + audioUrl + "]";
                 String signDialect = request.getSignDialect();
                 if (signDialect == null) signDialect = "ASL";
                 
-                List<SignDictionary> dictionary = dictionaryRepository.findByLanguage(targetLang);
-                String animation = generateSignAnimation(transcribedText, dictionary, signDialect);
-                
                 result.put("transcribedText", transcribedText);
-                result.put("signAnimation", animation);
                 result.put("signDialect", signDialect);
                 result.put("sourceModality", "speech");
                 result.put("targetModality", "sign");
@@ -279,7 +356,7 @@ public class TranslateService {
                 result.put("targetLanguage", targetLang);
                 
             } else if (sourceModality.equals("sign") && targetModality.equals("sign")) {
-                // Sign → Sign (same language translation)
+                // Sign → Sign
                 String videoUrl = request.getVideoUrl();
                 if (videoUrl == null) {
                     throw new RuntimeException("Video URL is required for sign-to-sign translation");
@@ -340,7 +417,6 @@ public class TranslateService {
     }
 
     public SignDictionary addDictionaryEntry(SignDictionary entry) {
-        // Check if entry already exists
         if (dictionaryRepository.existsByWordAndLanguage(entry.getWord(), entry.getLanguage())) {
             throw new IllegalArgumentException("Entry already exists for word: " + entry.getWord() + " in language: " + entry.getLanguage());
         }
@@ -402,12 +478,7 @@ public class TranslateService {
         );
     }
 
-    // ==================== MOCK METHODS (Replace with actual APIs) ====================
-
-    private String mockTranslate(String text, String sourceLang, String targetLang) {
-        // TODO: Replace with Google Translate API
-        return "[Translated from " + sourceLang + " to " + targetLang + "]: " + text;
-    }
+    // ==================== PRIVATE HELPER METHODS ====================
 
     private String generateSignAnimation(String text, List<SignDictionary> dictionary) {
         if (dictionary.isEmpty()) {
@@ -455,13 +526,10 @@ public class TranslateService {
         return String.join(" ", signs);
     }
 
-    private String mockSpeechToText(String audioUrl, String language) {
-        // TODO: Replace with Google Speech-to-Text API
-        return "[Transcribed from " + language + "]: Hello, this is a test transcription.";
-    }
+    // ==================== MOCK METHODS (Replace with actual APIs) ====================
 
     private String mockSignToText(String videoUrl, String language) {
-        // TODO: Replace with computer vision API
+        // TODO: Replace with actual sign language recognition
         return "[Translated from sign language " + language + "]: This is a test sign language translation.";
     }
 }

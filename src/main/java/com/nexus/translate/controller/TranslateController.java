@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,6 +50,11 @@ public class TranslateController {
             }
 
             UUID userId = extractUserId(authHeader);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "error", "Authentication required"));
+            }
+
             Map<String, Object> result = translateService.translateTextToText(text, sourceLang, targetLang, userId);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -71,6 +78,11 @@ public class TranslateController {
             }
 
             UUID userId = extractUserId(authHeader);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "error", "Authentication required"));
+            }
+
             Map<String, Object> result = translateService.textToSign(text, language, userId);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -79,26 +91,49 @@ public class TranslateController {
         }
     }
 
-    @PostMapping("/speech-to-text")
+    // ===== UPDATED: SPEECH-TO-TEXT WITH FILE UPLOAD =====
+    @PostMapping(value = "/speech-to-text", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Convert speech audio to text")
     public ResponseEntity<?> speechToText(
-            @RequestBody Map<String, String> request,
+            @RequestParam("file") MultipartFile audioFile,
+            @RequestParam(defaultValue = "en") String language,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            String audioUrl = request.get("audioUrl");
-            String language = request.getOrDefault("language", "en-US");
-
-            if (audioUrl == null || audioUrl.isEmpty()) {
+            if (audioFile.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("success", false, "error", "Audio URL is required"));
+                    .body(Map.of("success", false, "error", "Audio file is required"));
+            }
+
+            // Validate file type
+            String contentType = audioFile.getContentType();
+            if (contentType == null || !contentType.startsWith("audio/")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "error", "Only audio files are allowed"));
+            }
+
+            // Validate file size (max 25MB)
+            if (audioFile.getSize() > 25 * 1024 * 1024) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "error", "File size exceeds 25MB limit"));
             }
 
             UUID userId = extractUserId(authHeader);
-            Map<String, Object> result = translateService.speechToText(audioUrl, language, userId);
-            return ResponseEntity.ok(result);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "error", "Authentication required"));
+            }
+
+            Map<String, Object> result = translateService.speechToText(audioFile, language, userId);
+            
+            if ((boolean) result.getOrDefault("success", false)) {
+                return ResponseEntity.ok(result);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(result);
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "error", e.getMessage()));
+                .body(Map.of("success", false, "error", "Speech-to-text failed: " + e.getMessage()));
         }
     }
 
@@ -117,6 +152,11 @@ public class TranslateController {
             }
 
             UUID userId = extractUserId(authHeader);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "error", "Authentication required"));
+            }
+
             Map<String, Object> result = translateService.signToText(videoUrl, language, userId);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -125,14 +165,48 @@ public class TranslateController {
         }
     }
 
-    // ===== MULTIMODAL TRANSLATION (UPDATED - Uses TranslationRequest DTO) =====
+    // ===== NEW: TEXT-TO-SPEECH =====
+    @PostMapping("/text-to-speech")
+    @Operation(summary = "Convert text to speech audio")
+    public ResponseEntity<?> textToSpeech(
+            @RequestBody Map<String, String> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            String text = request.get("text");
+            String voice = request.get("voice");
+
+            if (text == null || text.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "error", "Text is required"));
+            }
+
+            UUID userId = extractUserId(authHeader);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "error", "Authentication required"));
+            }
+
+            Map<String, Object> result = translateService.textToSpeech(text, voice, userId);
+            
+            if ((boolean) result.getOrDefault("success", false)) {
+                return ResponseEntity.ok(result);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(result);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("success", false, "error", "Text-to-speech failed: " + e.getMessage()));
+        }
+    }
+
+    // ===== MULTIMODAL TRANSLATION =====
     @PostMapping("/multimodal")
     @Operation(summary = "Multi-modal translation (text, speech, sign)")
     public ResponseEntity<?> multimodalTranslation(
             @RequestBody TranslationRequest request,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            // Extract user ID from token
             UUID userId = extractUserId(authHeader);
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
