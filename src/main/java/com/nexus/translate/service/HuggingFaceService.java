@@ -218,21 +218,21 @@ public class HuggingFaceService {
     // ==================== TEXT-TO-SPEECH ====================
 
     /**
-     * Convert text to speech using SpeechT5 model
+     * Convert text to speech using Facebook MMS-TTS (per-language checkpoints).
+     * Note: MMS-TTS has no single multilingual endpoint — each language is a
+     * separate model (e.g. facebook/mms-tts-eng, facebook/mms-tts-spa), so the
+     * "voice" parameter here is repurposed to carry the ISO 639-1 language code
+     * (e.g. "en", "es", "fr"). Defaults to English if not provided.
+     * Confirmed working on the free hf-inference provider (unlike speecht5_tts).
+     * Output format is FLAC.
      */
     public byte[] textToSpeech(String text, String voice) {
         try {
-            String model = "microsoft/speecht5_tts";
+            String langCode = (voice != null && !voice.isEmpty()) ? voice : "en";
+            String model = "facebook/mms-tts-" + toMmsLangCode(langCode);
 
             Map<String, Object> request = new HashMap<>();
-            request.put("text_inputs", text);
-
-            // Optional voice parameters
-            if (voice != null && !voice.isEmpty()) {
-                Map<String, String> parameters = new HashMap<>();
-                parameters.put("voice", voice);
-                request.put("parameters", parameters);
-            }
+            request.put("inputs", text);
 
             byte[] response = webClient.post()
                     .uri(apiUrl + "/" + model)
@@ -251,6 +251,46 @@ public class HuggingFaceService {
             System.err.println("❌ Text-to-speech error: " + e.getMessage());
             return new byte[0];
         }
+    }
+
+    /**
+     * Maps ISO 639-1 codes (en, es, fr...) to the ISO 639-3 suffixes
+     * MMS-TTS checkpoints use (eng, spa, fra...).
+     * Falls back to English if the code isn't in the map.
+     * Full language list: https://huggingface.co/facebook/mms-tts (Language Coverage Overview)
+     */
+    private String toMmsLangCode(String isoCode) {
+        Map<String, String> mmsCodes = new HashMap<>();
+        mmsCodes.put("en", "eng");
+        mmsCodes.put("es", "spa");
+        mmsCodes.put("fr", "fra");
+        mmsCodes.put("de", "deu");
+        mmsCodes.put("it", "ita");
+        mmsCodes.put("pt", "por");
+        mmsCodes.put("ru", "rus");
+        mmsCodes.put("zh", "cmn");
+        mmsCodes.put("ar", "ara");
+        mmsCodes.put("hi", "hin");
+        mmsCodes.put("ja", "jpn");
+        mmsCodes.put("ko", "kor");
+        mmsCodes.put("nl", "nld");
+        mmsCodes.put("pl", "pol");
+        mmsCodes.put("tr", "tur");
+        mmsCodes.put("vi", "vie");
+        mmsCodes.put("sw", "swh");
+        mmsCodes.put("uk", "ukr");
+        mmsCodes.put("ro", "ron");
+        mmsCodes.put("el", "ell");
+        mmsCodes.put("he", "heb");
+        mmsCodes.put("th", "tha");
+        mmsCodes.put("id", "ind");
+        mmsCodes.put("bn", "ben");
+        mmsCodes.put("ta", "tam");
+        mmsCodes.put("te", "tel");
+        mmsCodes.put("ur", "urd");
+        mmsCodes.put("fa", "fas");
+
+        return mmsCodes.getOrDefault(isoCode.toLowerCase(), "eng");
     }
 
     /**
