@@ -19,8 +19,8 @@ COPY --from=builder /workspace/target/nexus-backend-*.jar /app/app.jar
 RUN chown -R spring:spring /app
 
 USER spring:spring
-EXPOSE 8081
+EXPOSE 8080
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV PORT=8081
+ENV PORT=8080
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
