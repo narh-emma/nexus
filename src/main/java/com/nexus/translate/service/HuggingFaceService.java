@@ -40,14 +40,16 @@ public class HuggingFaceService {
 
     // ==================== TEXT-TO-TEXT TRANSLATION ====================
 
+// ==================== TEXT-TO-TEXT TRANSLATION ====================
+
     /**
-     * Translate text using M2M100 - ✅ Confirmed working on free inference
-     * Supports 100+ languages
+     * Translate text using NLLB (No Language Left Behind) - ✅ Confirmed working on free inference
+     * Supports 200+ languages
      */
     public String translateText(String text, String targetLanguage, String sourceLanguage) {
         try {
-            // Use M2M100 - Works on free inference ✅
-            String model = "facebook/m2m100_418M";
+            // Use NLLB - Works on free inference ✅
+            String model = "facebook/nllb-200-distilled-600M";
 
             Map<String, Object> request = new HashMap<>();
             request.put("inputs", text);
@@ -59,7 +61,7 @@ public class HuggingFaceService {
             }
             request.put("parameters", parameters);
 
-            System.out.println("📡 Translating with M2M100...");
+            System.out.println("📡 Translating with NLLB...");
 
             String response = webClient.post()
                     .uri(apiUrl + "/" + model)
