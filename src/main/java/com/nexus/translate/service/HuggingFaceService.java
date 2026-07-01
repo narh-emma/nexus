@@ -225,7 +225,7 @@ public class HuggingFaceService {
             String model = "microsoft/speecht5_tts";
 
             Map<String, Object> request = new HashMap<>();
-            request.put("inputs", text);
+            request.put("text_inputs", text);
 
             // Optional voice parameters
             if (voice != null && !voice.isEmpty()) {
