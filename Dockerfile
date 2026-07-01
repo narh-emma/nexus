@@ -20,7 +20,7 @@ RUN chown -R spring:spring /app
 
 USER spring:spring
 EXPOSE 8081
-ENV SPRING_PROFILES_ACTIVE=dev
+ENV SPRING_PROFILES_ACTIVE=prod
 ENV PORT=8081
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
