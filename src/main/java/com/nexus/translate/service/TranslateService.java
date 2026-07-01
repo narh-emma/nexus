@@ -23,7 +23,7 @@ public class TranslateService {
     private SignDictionaryRepository dictionaryRepository;
 
     @Autowired
-    private HuggingFaceService huggingFaceService;
+    private GroqService groqService;
 
     // ==================== TEXT-TO-TEXT TRANSLATION ====================
 
@@ -31,8 +31,7 @@ public class TranslateService {
         long startTime = System.currentTimeMillis();
 
         try {
-            // ===== USE HUGGING FACE FOR TRANSLATION =====
-            String translatedText = huggingFaceService.translateText(text, targetLang, sourceLang);
+            String translatedText = groqService.translateText(text, targetLang);
 
             TranslationLog log = new TranslationLog();
             log.setUserId(userId);
@@ -101,8 +100,7 @@ public class TranslateService {
         long startTime = System.currentTimeMillis();
 
         try {
-            // ===== USE HUGGING FACE WHISPER =====
-            String transcribedText = huggingFaceService.transcribeAudio(audioFile);
+            String transcribedText = groqService.transcribeAudio(audioFile);
 
             TranslationLog log = new TranslationLog();
             log.setUserId(userId);
@@ -135,30 +133,9 @@ public class TranslateService {
     // ==================== SIGN-TO-TEXT ====================
 
     public Map<String, Object> signToText(String videoUrl, String language, UUID userId) {
-        long startTime = System.currentTimeMillis();
-
-        // TODO: Replace with actual sign language recognition
-        String translatedText = mockSignToText(videoUrl, language);
-
-        TranslationLog log = new TranslationLog();
-        log.setUserId(userId);
-        log.setSourceModality("sign");
-        log.setTargetModality("text");
-        log.setSourceLanguage(language);
-        log.setTargetLanguage("en");
-        log.setInputText(videoUrl);
-        log.setOutputPayload(translatedText);
-        log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
-        log.setCreatedAt(LocalDateTime.now());
-        logRepository.save(log);
-
         return Map.of(
-            "success", true,
-            "data", Map.of(
-                "text", translatedText,
-                "language", language
-            ),
-            "latencyMs", log.getLatencyMs()
+            "success", false,
+            "error", "Sign-to-text model integration is currently pending pipeline setup."
         );
     }
 
@@ -168,16 +145,14 @@ public class TranslateService {
         long startTime = System.currentTimeMillis();
 
         try {
-            // ===== USE HUGGING FACE TTS =====
-            byte[] audioData = huggingFaceService.textToSpeech(text, voice);
+            byte[] audioData = groqService.textToSpeech(text, voice);
             
             if (audioData.length == 0) {
                 throw new RuntimeException("Failed to generate speech");
             }
 
-            // Save audio file
             String fileName = "speech_" + UUID.randomUUID() + ".mp3";
-            String audioUrl = huggingFaceService.saveAudioToFile(audioData, fileName);
+            String audioUrl = groqService.saveAudioToFile(audioData, fileName);
 
             TranslationLog log = new TranslationLog();
             log.setUserId(userId);
@@ -220,13 +195,11 @@ public class TranslateService {
         if (sourceModality == null) sourceModality = "text";
         if (targetModality == null) targetModality = "text";
 
-        // Route to appropriate translation method
         if (sourceModality.equals("text") && targetModality.equals("text")) {
             return translateTextToText(text, sourceLang, targetLang, userId);
         } else if (sourceModality.equals("text") && targetModality.equals("sign")) {
             return textToSign(text, targetLang != null ? targetLang : "ASL", userId);
         } else if (sourceModality.equals("speech") && targetModality.equals("text")) {
-            // For speech, we need to handle file upload differently
             return Map.of(
                 "success", false,
                 "error", "Please use /speech-to-text endpoint for file upload"
@@ -251,7 +224,6 @@ public class TranslateService {
         String sourceLang = request.getSourceLanguage();
         String targetLang = request.getTargetLanguage();
         
-        // Default values
         if (sourceModality == null || sourceModality.isEmpty()) sourceModality = "text";
         if (targetModality == null || targetModality.isEmpty()) targetModality = "text";
         if (sourceLang == null || sourceLang.isEmpty()) sourceLang = "en";
@@ -260,16 +232,14 @@ public class TranslateService {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // Route based on source and target modalities
             if (sourceModality.equals("text") && targetModality.equals("text")) {
-                // Text → Text
                 String inputText = request.getText();
                 if (inputText == null) inputText = request.getPayload();
                 if (inputText == null) {
-                    throw new RuntimeException("Text input is required for text-to-text translation");
+                    throw new IllegalArgumentException("Text input is required for text-to-text translation");
                 }
                 
-                String translatedText = huggingFaceService.translateText(inputText, targetLang, sourceLang);
+                String translatedText = groqService.translateText(inputText, targetLang);
                 
                 result.put("translatedText", translatedText);
                 result.put("sourceModality", "text");
@@ -278,17 +248,15 @@ public class TranslateService {
                 result.put("targetLanguage", targetLang);
                 
             } else if (sourceModality.equals("text") && targetModality.equals("sign")) {
-                // Text → Sign
                 String inputText = request.getText();
                 if (inputText == null) inputText = request.getPayload();
                 if (inputText == null) {
-                    throw new RuntimeException("Text input is required for text-to-sign translation");
+                    throw new IllegalArgumentException("Text input is required for text-to-sign translation");
                 }
                 
                 String signDialect = request.getSignDialect();
                 if (signDialect == null) signDialect = "ASL";
                 
-                // Get sign mappings
                 List<SignDictionary> dictionary = dictionaryRepository.findByLanguage(targetLang);
                 String animation = generateSignAnimation(inputText, dictionary, signDialect);
                 
@@ -301,15 +269,12 @@ public class TranslateService {
                 result.put("targetLanguage", targetLang);
                 
             } else if (sourceModality.equals("speech") && targetModality.equals("text")) {
-                // Speech → Text
                 String audioUrl = request.getAudioUrl();
                 if (audioUrl == null) {
-                    throw new RuntimeException("Audio URL is required for speech-to-text translation");
+                    throw new IllegalArgumentException("Audio URL is required for speech-to-text translation");
                 }
                 
-                // For URL-based audio, you'd need to download first
-                // This is a placeholder
-                String transcribedText = "[Speech to text from URL: " + audioUrl + "]";
+                String transcribedText = "[Speech to text processing for: " + audioUrl + "]";
                 
                 result.put("transcribedText", transcribedText);
                 result.put("sourceModality", "speech");
@@ -318,14 +283,12 @@ public class TranslateService {
                 result.put("targetLanguage", targetLang);
                 
             } else if (sourceModality.equals("speech") && targetModality.equals("sign")) {
-                // Speech → Sign
                 String audioUrl = request.getAudioUrl();
                 if (audioUrl == null) {
-                    throw new RuntimeException("Audio URL is required for speech-to-sign translation");
+                    throw new IllegalArgumentException("Audio URL is required for speech-to-sign translation");
                 }
                 
-                // This is a placeholder - in reality, you'd transcribe first then convert to sign
-                String transcribedText = "[Speech to sign from URL: " + audioUrl + "]";
+                String transcribedText = "[Speech processing for: " + audioUrl + "]";
                 String signDialect = request.getSignDialect();
                 if (signDialect == null) signDialect = "ASL";
                 
@@ -337,29 +300,12 @@ public class TranslateService {
                 result.put("targetLanguage", targetLang);
                 
             } else if (sourceModality.equals("sign") && targetModality.equals("text")) {
-                // Sign → Text
-                String videoUrl = request.getVideoUrl();
-                if (videoUrl == null) {
-                    throw new RuntimeException("Video URL is required for sign-to-text translation");
-                }
-                
-                String signDialect = request.getSignDialect();
-                if (signDialect == null) signDialect = "ASL";
-                
-                String translatedText = mockSignToText(videoUrl, signDialect);
-                
-                result.put("translatedText", translatedText);
-                result.put("signDialect", signDialect);
-                result.put("sourceModality", "sign");
-                result.put("targetModality", "text");
-                result.put("sourceLanguage", sourceLang);
-                result.put("targetLanguage", targetLang);
+                throw new UnsupportedOperationException("Sign-to-text pipeline is pending engine integration.");
                 
             } else if (sourceModality.equals("sign") && targetModality.equals("sign")) {
-                // Sign → Sign
                 String videoUrl = request.getVideoUrl();
                 if (videoUrl == null) {
-                    throw new RuntimeException("Video URL is required for sign-to-sign translation");
+                    throw new IllegalArgumentException("Video URL is required for sign-to-sign translation");
                 }
                 
                 result.put("message", "Sign to sign translation uses the same sign language");
@@ -370,15 +316,13 @@ public class TranslateService {
                 result.put("targetLanguage", targetLang);
                 
             } else {
-                throw new RuntimeException("Unsupported modality combination: " + sourceModality + " → " + targetModality);
+                throw new IllegalArgumentException("Unsupported modality combination: " + sourceModality + " → " + targetModality);
             }
             
-            // Calculate latency
             int latencyMs = (int) (System.currentTimeMillis() - startTime);
             result.put("latencyMs", latencyMs);
             result.put("success", true);
             
-            // Log translation
             TranslationLog log = new TranslationLog();
             log.setUserId(userId);
             log.setSourceModality(sourceModality);
@@ -404,17 +348,9 @@ public class TranslateService {
 
     // ==================== DICTIONARY METHODS ====================
 
-    public List<SignDictionary> getDictionary() {
-        return dictionaryRepository.findAll();
-    }
-
-    public List<SignDictionary> getDictionaryByLanguage(String language) {
-        return dictionaryRepository.findByLanguage(language);
-    }
-
-    public List<SignDictionary> searchDictionary(String searchTerm) {
-        return dictionaryRepository.findByWordContainingIgnoreCase(searchTerm);
-    }
+    public List<SignDictionary> getDictionary() { return dictionaryRepository.findAll(); }
+    public List<SignDictionary> getDictionaryByLanguage(String language) { return dictionaryRepository.findByLanguage(language); }
+    public List<SignDictionary> searchDictionary(String searchTerm) { return dictionaryRepository.findByWordContainingIgnoreCase(searchTerm); }
 
     public SignDictionary addDictionaryEntry(SignDictionary entry) {
         if (dictionaryRepository.existsByWordAndLanguage(entry.getWord(), entry.getLanguage())) {
@@ -445,17 +381,9 @@ public class TranslateService {
 
     // ==================== HISTORY METHODS ====================
 
-    public List<TranslationLog> getHistory(UUID userId) {
-        return logRepository.findByUserId(userId);
-    }
-
-    public List<TranslationLog> getHistoryByModality(UUID userId, String modality) {
-        return logRepository.findByUserIdAndSourceModality(userId, modality);
-    }
-
-    public void clearHistory(UUID userId) {
-        logRepository.deleteByUserId(userId);
-    }
+    public List<TranslationLog> getHistory(UUID userId) { return logRepository.findByUserId(userId); }
+    public List<TranslationLog> getHistoryByModality(UUID userId, String modality) { return logRepository.findByUserIdAndSourceModality(userId, modality); }
+    public void clearHistory(UUID userId) { logRepository.deleteByUserId(userId); }
 
     // ==================== SUPPORTED LANGUAGES ====================
 
@@ -481,55 +409,24 @@ public class TranslateService {
     // ==================== PRIVATE HELPER METHODS ====================
 
     private String generateSignAnimation(String text, List<SignDictionary> dictionary) {
-        if (dictionary.isEmpty()) {
-            return "No sign mappings found for the given language";
-        }
-
-        Map<String, String> signMap = dictionary.stream()
-            .collect(Collectors.toMap(
-                SignDictionary::getWord,
-                SignDictionary::getSignVideoUrl,
-                (existing, replacement) -> existing
-            ));
-
-        String[] words = text.split(" ");
-        List<String> signs = new ArrayList<>();
-        for (String word : words) {
-            String cleanWord = word.toLowerCase().replaceAll("[^a-zA-Z]", "");
-            String sign = signMap.getOrDefault(cleanWord, "UNKNOWN_SIGN");
-            signs.add(sign);
-        }
-
-        return String.join(" ", signs);
+        if (dictionary.isEmpty()) return "No sign mappings found for the given language";
+        Map<String, String> signMap = dictionary.stream().collect(Collectors.toMap(SignDictionary::getWord, SignDictionary::getSignVideoUrl, (existing, replacement) -> existing));
+        return parseTextToSigns(text, signMap);
     }
 
     private String generateSignAnimation(String text, List<SignDictionary> dictionary, String dialect) {
-        if (dictionary.isEmpty()) {
-            return "No sign mappings found for " + dialect;
-        }
+        if (dictionary.isEmpty()) return "No sign mappings found for " + dialect;
+        Map<String, String> signMap = dictionary.stream().collect(Collectors.toMap(SignDictionary::getWord, SignDictionary::getSignVideoUrl, (existing, replacement) -> existing));
+        return parseTextToSigns(text, signMap);
+    }
 
-        Map<String, String> signMap = dictionary.stream()
-            .collect(Collectors.toMap(
-                SignDictionary::getWord,
-                SignDictionary::getSignVideoUrl,
-                (existing, replacement) -> existing
-            ));
-
+    private String parseTextToSigns(String text, Map<String, String> signMap) {
         String[] words = text.split(" ");
         List<String> signs = new ArrayList<>();
         for (String word : words) {
             String cleanWord = word.toLowerCase().replaceAll("[^a-zA-Z]", "");
-            String sign = signMap.getOrDefault(cleanWord, "UNKNOWN_SIGN");
-            signs.add(sign);
+            signs.add(signMap.getOrDefault(cleanWord, "UNKNOWN_SIGN"));
         }
-
         return String.join(" ", signs);
-    }
-
-    // ==================== MOCK METHODS (Replace with actual APIs) ====================
-
-    private String mockSignToText(String videoUrl, String language) {
-        // TODO: Replace with actual sign language recognition
-        return "[Translated from sign language " + language + "]: This is a test sign language translation.";
     }
 }

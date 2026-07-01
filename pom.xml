@@ -141,9 +141,9 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- ==================== TRANSLATION SERVICES ==================== -->
-        <!-- Google Cloud Translation - -->
-        
+        <!-- ==================== GOOGLE CLOUD TRANSLATION ==================== -->
+
+        <!-- Google Cloud Translation -->
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-translate</artifactId>
@@ -157,7 +157,7 @@
             <version>2.4.0</version>
         </dependency>
 
-        <!-- Google Cloud Text-to-Speech  -->
+        <!-- Google Cloud Text-to-Speech -->
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-texttospeech</artifactId>
@@ -201,34 +201,6 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-            <!-- WebClient for API calls -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-webflux</artifactId>
-    </dependency>
-
-    <!-- JSON Processing -->
-    <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-    </dependency>
-        <!-- WebClient for API calls -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-webflux</artifactId>
-    </dependency>
-
-    <!-- JSON Processing -->
-    <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <!-- For multipart file uploads -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
 
     </dependencies>
     
@@ -257,8 +229,6 @@
                     <target>${java.version}</target>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
-
 </project>
