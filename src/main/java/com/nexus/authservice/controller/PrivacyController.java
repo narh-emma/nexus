@@ -1,6 +1,6 @@
-package main.java.com.nexus.authservice.controller;
+package com.nexus.authservice.controller;
 
-import main.java.com.nexus.authservice.dto.PrivacySettingsRequest;
+import com.nexus.authservice.dto.PrivacySettingsRequest;
 import com.nexus.authservice.model.User;
 import com.nexus.authservice.repo.UserRepository;
 import com.nexus.authservice.utils.JwtUtil;
@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/privacy")
@@ -46,6 +45,7 @@ public class PrivacyController {
             "success", true,
             "data", Map.of(
                 "shareMedicalData", user.isShareMedicalData(),
+                "shareLocation", user.isShareLocation(),
                 "receiveNotifications", user.isReceiveNotifications(),
                 "dataConsent", user.isDataConsent(),
                 "consentGivenAt", user.getConsentGivenAt(),
@@ -70,6 +70,7 @@ public class PrivacyController {
             .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setShareMedicalData(request.isShareMedicalData());
+        user.setShareLocation(request.isShareLocation());
         user.setReceiveNotifications(request.isReceiveNotifications());
         user.setDataConsent(request.isDataConsent());
         user.setConsentGivenAt(LocalDateTime.now());
@@ -125,8 +126,6 @@ public class PrivacyController {
                 .body(Map.of("success", false, "error", "Authentication required"));
         }
 
-        // In production: Send email to admin, mark user for deletion
-        // For now: Just return success
         return ResponseEntity.ok(Map.of(
             "success", true,
             "message", "Data deletion request submitted. You will be contacted within 30 days."
