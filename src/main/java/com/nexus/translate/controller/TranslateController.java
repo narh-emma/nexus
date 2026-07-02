@@ -91,7 +91,7 @@ public class TranslateController {
         }
     }
 
-    // ===== UPDATED: SPEECH-TO-TEXT WITH FILE UPLOAD =====
+    // ===== SPEECH-TO-TEXT WITH FILE UPLOAD =====
     @PostMapping(value = "/speech-to-text", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Convert speech audio to text")
     public ResponseEntity<?> speechToText(
@@ -124,7 +124,7 @@ public class TranslateController {
             }
 
             Map<String, Object> result = translateService.speechToText(audioFile, language, userId);
-            
+
             if ((boolean) result.getOrDefault("success", false)) {
                 return ResponseEntity.ok(result);
             } else {
@@ -165,7 +165,7 @@ public class TranslateController {
         }
     }
 
-    // ===== NEW: TEXT-TO-SPEECH =====
+    // ===== TEXT-TO-SPEECH (fixed: now reads "language" from the request body) =====
     @PostMapping("/text-to-speech")
     @Operation(summary = "Convert text to speech audio")
     public ResponseEntity<?> textToSpeech(
@@ -174,6 +174,7 @@ public class TranslateController {
         try {
             String text = request.get("text");
             String voice = request.get("voice");
+            String language = request.getOrDefault("language", "en"); // now actually read and used
 
             if (text == null || text.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -186,8 +187,8 @@ public class TranslateController {
                     .body(Map.of("success", false, "error", "Authentication required"));
             }
 
-            Map<String, Object> result = translateService.textToSpeech(text, voice, userId);
-            
+            Map<String, Object> result = translateService.textToSpeech(text, voice, language, userId);
+
             if ((boolean) result.getOrDefault("success", false)) {
                 return ResponseEntity.ok(result);
             } else {
@@ -212,9 +213,9 @@ public class TranslateController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("success", false, "error", "Authentication required"));
             }
-            
+
             Map<String, Object> result = translateService.multimodalTranslation(request, userId);
-            
+
             if ((boolean) result.getOrDefault("success", false)) {
                 return ResponseEntity.ok(Map.of(
                     "success", true,
