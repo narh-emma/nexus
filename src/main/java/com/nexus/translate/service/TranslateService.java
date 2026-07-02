@@ -25,63 +25,74 @@ public class TranslateService {
     @Autowired
     private GroqService groqService;
 
-    // ==================== ELEVENLABS VOICE ID CONFIGURATION ====================
+    @Autowired
+    private EdgeTtsService edgeTtsService;
+
+    // ==================== EDGE TTS VOICE CONFIGURATION ====================
+    // Run `edge-tts --list-voices` to see/refresh the full current catalogue.
     private static final Map<String, List<Map<String, String>>> LANGUAGE_VOICES = new HashMap<>();
 
     static {
         List<Map<String, String>> enVoices = new ArrayList<>();
-        enVoices.add(Map.of("id", "cCYjmrGZaI86GUJ7F2Nn", "name", "David (Male)"));
-        enVoices.add(Map.of("id", "r1KmysJdVYZjJCm4mL3b", "name", "Jessica (Female)"));
-        enVoices.add(Map.of("id", "q0IMILNRPxOgtBTS4taI", "name", "Drew (Male)"));
-        enVoices.add(Map.of("id", "MzqUf1HbJ8UmQ0wUsx2p", "name", "Katie X (Female)"));
-        enVoices.add(Map.of("id", "dtSEyYGNJqjrtBArPCVZ", "name", "Titan (Male)"));
+        enVoices.add(Map.of("id", "en-US-AvaMultilingualNeural", "name", "Ava (Female)"));
+        enVoices.add(Map.of("id", "en-US-GuyNeural", "name", "Guy (Male)"));
+        enVoices.add(Map.of("id", "en-US-JennyNeural", "name", "Jenny (Female)"));
+        enVoices.add(Map.of("id", "en-GB-RyanNeural", "name", "Ryan (Male, UK)"));
+        enVoices.add(Map.of("id", "en-GB-SoniaNeural", "name", "Sonia (Female, UK)"));
         LANGUAGE_VOICES.put("en", enVoices);
 
         List<Map<String, String>> esVoices = new ArrayList<>();
-        esVoices.add(Map.of("id", "Wl3O9lmFSMgGFTTwuS6f", "name", "Martin Alvarez (Male)"));
-        esVoices.add(Map.of("id", "zl7szWVBXnpgrJmAalgz", "name", "Lily (Female)"));
+        esVoices.add(Map.of("id", "es-ES-AlvaroNeural", "name", "Alvaro (Male)"));
+        esVoices.add(Map.of("id", "es-ES-ElviraNeural", "name", "Elvira (Female)"));
         LANGUAGE_VOICES.put("es", esVoices);
 
         List<Map<String, String>> frVoices = new ArrayList<>();
-        frVoices.add(Map.of("id", "93nuHbke4dTER9x2pDwE", "name", "Adam(Male)"));
-        frVoices.add(Map.of("id", "DGTOOUoGpoP6UZ9uSWfA", "name", "Antoni (Multilingual)"));
+        frVoices.add(Map.of("id", "fr-FR-HenriNeural", "name", "Henri (Male)"));
+        frVoices.add(Map.of("id", "fr-FR-DeniseNeural", "name", "Denise (Female)"));
         LANGUAGE_VOICES.put("fr", frVoices);
 
         List<Map<String, String>> deVoices = new ArrayList<>();
-        deVoices.add(Map.of("id", "vGWWh1bodhwwi4yHd6qZ", "name", "Marcus (Male)"));
-        deVoices.add(Map.of("id", "Qy4b2JlSGxY7I9M9Bqxb", "name", "Laura (Female)"));
+        deVoices.add(Map.of("id", "de-DE-ConradNeural", "name", "Conrad (Male)"));
+        deVoices.add(Map.of("id", "de-DE-KatjaNeural", "name", "Katja (Female)"));
         LANGUAGE_VOICES.put("de", deVoices);
 
         List<Map<String, String>> itVoices = new ArrayList<>();
-        itVoices.add(Map.of("id", "Qy4b2JlSGxY7I9M9Bqxb", "name", "Marco (Multilingual)"));
+        itVoices.add(Map.of("id", "it-IT-DiegoNeural", "name", "Diego (Male)"));
+        itVoices.add(Map.of("id", "it-IT-ElsaNeural", "name", "Elsa (Female)"));
         LANGUAGE_VOICES.put("it", itVoices);
 
         List<Map<String, String>> ptVoices = new ArrayList<>();
-        ptVoices.add(Map.of("id", "ORgG8rwdAiMYRug8RJwR", "name", "Ana Alice (Multilingual)"));
+        ptVoices.add(Map.of("id", "pt-BR-AntonioNeural", "name", "Antonio (Male)"));
+        ptVoices.add(Map.of("id", "pt-BR-FranciscaNeural", "name", "Francisca (Female)"));
         LANGUAGE_VOICES.put("pt", ptVoices);
 
         List<Map<String, String>> zhVoices = new ArrayList<>();
-        zhVoices.add(Map.of("id", "4VZIsMPtgggwNg7OXbPY", "name", "James Gao (Multilingual)"));
+        zhVoices.add(Map.of("id", "zh-CN-YunxiNeural", "name", "Yunxi (Male)"));
+        zhVoices.add(Map.of("id", "zh-CN-XiaoxiaoNeural", "name", "Xiaoxiao (Female)"));
         LANGUAGE_VOICES.put("zh", zhVoices);
 
         List<Map<String, String>> jaVoices = new ArrayList<>();
-        jaVoices.add(Map.of("id", "A4AyGcPAjb1pHgflyZZp", "name", "Risuto (Multilingual)"));
+        jaVoices.add(Map.of("id", "ja-JP-KeitaNeural", "name", "Keita (Male)"));
+        jaVoices.add(Map.of("id", "ja-JP-NanamiNeural", "name", "Nanami (Female)"));
         LANGUAGE_VOICES.put("ja", jaVoices);
 
         List<Map<String, String>> koVoices = new ArrayList<>();
-        koVoices.add(Map.of("id", "PDoCXqBQFGsvfO0hNkEs", "name", "Chris (Multilingual)"));
+        koVoices.add(Map.of("id", "ko-KR-InJoonNeural", "name", "InJoon (Male)"));
+        koVoices.add(Map.of("id", "ko-KR-SunHiNeural", "name", "SunHi (Female)"));
         LANGUAGE_VOICES.put("ko", koVoices);
 
         List<Map<String, String>> arVoices = new ArrayList<>();
-        arVoices.add(Map.of("id", "OFHP1Qg30FPoNfkUFFlA", "name", "Adam (Multilingual)"));
+        arVoices.add(Map.of("id", "ar-SA-HamedNeural", "name", "Hamed (Male)"));
+        arVoices.add(Map.of("id", "ar-SA-ZariyahNeural", "name", "Zariyah (Female)"));
         LANGUAGE_VOICES.put("ar", arVoices);
 
         List<Map<String, String>> ruVoices = new ArrayList<>();
-        ruVoices.add(Map.of("id", "vQxSi2EuaRWwBw3nn6dK", "name", "Marat (Multilingual)"));
+        ruVoices.add(Map.of("id", "ru-RU-DmitryNeural", "name", "Dmitry (Male)"));
+        ruVoices.add(Map.of("id", "ru-RU-SvetlanaNeural", "name", "Svetlana (Female)"));
         LANGUAGE_VOICES.put("ru", ruVoices);
     }
 
-    private static final String DEFAULT_VOICE_ID = "cCYjmrGZaI86GUJ7F2Nn";
+    private static final String DEFAULT_VOICE_ID = "en-US-AvaMultilingualNeural";
 
     private String getDefaultVoiceForLanguage(String langCode) {
         List<Map<String, String>> voices = LANGUAGE_VOICES.get(langCode != null ? langCode.toLowerCase() : "en");
@@ -161,19 +172,22 @@ public class TranslateService {
     }
 
     // ==================== SPEECH-TO-TEXT ====================
+    // Powered by Groq-hosted Whisper. Note: this transcribes in the ORIGINAL
+    // spoken language -- it does not translate. Pair with translateTextToText()
+    // afterwards if you need the transcript translated too.
 
     public Map<String, Object> speechToText(MultipartFile audioFile, String language, UUID userId) {
         long startTime = System.currentTimeMillis();
 
         try {
-            String transcribedText = groqService.transcribeAudio(audioFile);
+            String transcribedText = groqService.transcribeAudio(audioFile, language);
 
             TranslationLog log = new TranslationLog();
             log.setUserId(userId);
             log.setSourceModality("speech");
             log.setTargetModality("text");
             log.setSourceLanguage(language);
-            log.setTargetLanguage("en");
+            log.setTargetLanguage(language); // no translation happened here, just transcription
             log.setInputText(audioFile.getOriginalFilename());
             log.setOutputPayload(transcribedText);
             log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
@@ -206,28 +220,37 @@ public class TranslateService {
     }
 
     // ==================== TEXT-TO-SPEECH ====================
+    // User types text + picks a target language -> we translate the text to
+    // that language via Groq, then speak the TRANSLATED text via Edge TTS
+    // using a voice that matches the target language.
 
     public Map<String, Object> textToSpeech(String text, String voice, String language, UUID userId) {
         long startTime = System.currentTimeMillis();
 
         try {
-            String resolvedVoiceId = (voice != null && !voice.trim().isEmpty()) ? voice : getDefaultVoiceForLanguage(language);
+            String targetLanguage = (language != null && !language.isEmpty()) ? language : "en";
 
-            byte[] audioData = groqService.textToSpeech(text, resolvedVoiceId);
-            
-            if (audioData == null || audioData.length == 0) {
+            // Step 1: translate the input text into the target language
+            String translatedText = groqService.translateText(text, targetLanguage);
+
+            // Step 2: pick a voice for that language (explicit voice wins if provided)
+            String resolvedVoiceId = (voice != null && !voice.trim().isEmpty())
+                    ? voice
+                    : getDefaultVoiceForLanguage(targetLanguage);
+
+            // Step 3: speak the translated text and save the audio file
+            String audioUrl = edgeTtsService.textToSpeechAndSave(translatedText, resolvedVoiceId);
+
+            if (audioUrl == null) {
                 throw new RuntimeException("Failed to generate speech");
             }
-
-            String fileName = "speech_" + UUID.randomUUID() + ".mp3";
-            String audioUrl = groqService.saveAudioToFile(audioData, fileName);
 
             TranslationLog log = new TranslationLog();
             log.setUserId(userId);
             log.setSourceModality("text");
             log.setTargetModality("speech");
-            log.setSourceLanguage(language != null ? language : "en");
-            log.setTargetLanguage(language != null ? language : "en");
+            log.setSourceLanguage("auto");
+            log.setTargetLanguage(targetLanguage);
             log.setInputText(text);
             log.setOutputPayload(audioUrl);
             log.setLatencyMs((int) (System.currentTimeMillis() - startTime));
@@ -237,9 +260,11 @@ public class TranslateService {
             return Map.of(
                 "success", true,
                 "data", Map.of(
-                    "text", text,
+                    "originalText", text,
+                    "translatedText", translatedText,
                     "audioUrl", audioUrl,
-                    "voice", resolvedVoiceId
+                    "voice", resolvedVoiceId,
+                    "targetLanguage", targetLanguage
                 ),
                 "latencyMs", log.getLatencyMs()
             );
@@ -478,7 +503,7 @@ public class TranslateService {
         return languages;
     }
 
-    public Map<String, List<Map<String, String>>> getElevenLabsVoices() {
+    public Map<String, List<Map<String, String>>> getEdgeTtsVoices() {
         return LANGUAGE_VOICES;
     }
 
