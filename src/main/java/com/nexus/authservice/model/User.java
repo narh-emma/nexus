@@ -37,7 +37,7 @@ public class User {
     @Column(name = "role")
     private String role = "USER";
     
-    // ===== PROFILE FIELDS - ADD THESE =====
+    // ===== PROFILE FIELDS =====
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
     
@@ -49,6 +49,14 @@ public class User {
     
     @Column(name = "bio", columnDefinition = "TEXT")
     private String bio;
+
+    // ===== EMAIL VERIFICATION FIELDS =====
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    /** Holds a new email address awaiting confirmation via /verify-email-change. Not applied to `email` until confirmed. */
+    @Column(name = "pending_email")
+    private String pendingEmail;
     
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -76,6 +84,10 @@ public class User {
     public String getPhoneNumber() { return phoneNumber; }
     public LocalDate getDateOfBirth() { return dateOfBirth; }
     public String getBio() { return bio; }
+
+    // ===== EMAIL VERIFICATION GETTERS =====
+    public boolean isEmailVerified() { return emailVerified; }
+    public String getPendingEmail() { return pendingEmail; }
     
     // ===== SETTERS =====
     public void setId(UUID id) { this.id = id; }
@@ -95,6 +107,10 @@ public class User {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
     public void setBio(String bio) { this.bio = bio; }
+
+    // ===== EMAIL VERIFICATION SETTERS =====
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+    public void setPendingEmail(String pendingEmail) { this.pendingEmail = pendingEmail; }
     
     // ===== HELPER METHOD =====
     public boolean isAdmin() {
