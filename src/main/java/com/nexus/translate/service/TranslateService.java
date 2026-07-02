@@ -30,58 +30,58 @@ public class TranslateService {
 
     static {
         List<Map<String, String>> enVoices = new ArrayList<>();
-        enVoices.add(Map.of("id", "21m00Tcm4TlvDq8ikWAM", "name", "Rachel (Female)"));
-        enVoices.add(Map.of("id", "AZnzlk1XvdvUeBnXmlld", "name", "Domi (Female)"));
-        enVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Female)"));
-        enVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Male)"));
-        enVoices.add(Map.of("id", "TxGEywOCnUeX31gOM0jB", "name", "Liam (Male)"));
+        enVoices.add(Map.of("id", "cCYjmrGZaI86GUJ7F2Nn", "name", "David (Male)"));
+        enVoices.add(Map.of("id", "r1KmysJdVYZjJCm4mL3b", "name", "Jessica (Female)"));
+        enVoices.add(Map.of("id", "q0IMILNRPxOgtBTS4taI", "name", "Drew (Male)"));
+        enVoices.add(Map.of("id", "MzqUf1HbJ8UmQ0wUsx2p", "name", "Katie X (Female)"));
+        enVoices.add(Map.of("id", "dtSEyYGNJqjrtBArPCVZ", "name", "Titan (Male)"));
         LANGUAGE_VOICES.put("en", enVoices);
 
         List<Map<String, String>> esVoices = new ArrayList<>();
-        esVoices.add(Map.of("id", "FGY266Ew3S6t6gfI7UuG", "name", "Marcelo (Male / Spanish)"));
-        esVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Multilingual)"));
+        esVoices.add(Map.of("id", "Wl3O9lmFSMgGFTTwuS6f", "name", "Martin Alvarez (Male)"));
+        esVoices.add(Map.of("id", "zl7szWVBXnpgrJmAalgz", "name", "Lily (Female)"));
         LANGUAGE_VOICES.put("es", esVoices);
 
         List<Map<String, String>> frVoices = new ArrayList<>();
-        frVoices.add(Map.of("id", "21m00Tcm4TlvDq8ikWAM", "name", "Rachel (Multilingual)"));
-        frVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Multilingual)"));
+        frVoices.add(Map.of("id", "93nuHbke4dTER9x2pDwE", "name", "Adam(Male)"));
+        frVoices.add(Map.of("id", "DGTOOUoGpoP6UZ9uSWfA", "name", "Antoni (Multilingual)"));
         LANGUAGE_VOICES.put("fr", frVoices);
 
         List<Map<String, String>> deVoices = new ArrayList<>();
-        deVoices.add(Map.of("id", "AZnzlk1XvdvUeBnXmlld", "name", "Domi (Multilingual)"));
-        deVoices.add(Map.of("id", "TxGEywOCnUeX31gOM0jB", "name", "Liam (Multilingual)"));
+        deVoices.add(Map.of("id", "vGWWh1bodhwwi4yHd6qZ", "name", "Marcus (Male)"));
+        deVoices.add(Map.of("id", "Qy4b2JlSGxY7I9M9Bqxb", "name", "Laura (Female)"));
         LANGUAGE_VOICES.put("de", deVoices);
 
         List<Map<String, String>> itVoices = new ArrayList<>();
-        itVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Multilingual)"));
+        itVoices.add(Map.of("id", "Qy4b2JlSGxY7I9M9Bqxb", "name", "Marco (Multilingual)"));
         LANGUAGE_VOICES.put("it", itVoices);
 
         List<Map<String, String>> ptVoices = new ArrayList<>();
-        ptVoices.add(Map.of("id", "21m00Tcm4TlvDq8ikWAM", "name", "Rachel (Multilingual)"));
+        ptVoices.add(Map.of("id", "ORgG8rwdAiMYRug8RJwR", "name", "Ana Alice (Multilingual)"));
         LANGUAGE_VOICES.put("pt", ptVoices);
 
         List<Map<String, String>> zhVoices = new ArrayList<>();
-        zhVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Multilingual)"));
+        zhVoices.add(Map.of("id", "4VZIsMPtgggwNg7OXbPY", "name", "James Gao (Multilingual)"));
         LANGUAGE_VOICES.put("zh", zhVoices);
 
         List<Map<String, String>> jaVoices = new ArrayList<>();
-        jaVoices.add(Map.of("id", "AZnzlk1XvdvUeBnXmlld", "name", "Domi (Multilingual)"));
+        jaVoices.add(Map.of("id", "A4AyGcPAjb1pHgflyZZp", "name", "Risuto (Multilingual)"));
         LANGUAGE_VOICES.put("ja", jaVoices);
 
         List<Map<String, String>> koVoices = new ArrayList<>();
-        koVoices.add(Map.of("id", "EXAVITQu4vr4xnSDxMaL", "name", "Bella (Multilingual)"));
+        koVoices.add(Map.of("id", "PDoCXqBQFGsvfO0hNkEs", "name", "Chris (Multilingual)"));
         LANGUAGE_VOICES.put("ko", koVoices);
 
         List<Map<String, String>> arVoices = new ArrayList<>();
-        arVoices.add(Map.of("id", "TxGEywOCnUeX31gOM0jB", "name", "Liam (Multilingual)"));
+        arVoices.add(Map.of("id", "OFHP1Qg30FPoNfkUFFlA", "name", "Adam (Multilingual)"));
         LANGUAGE_VOICES.put("ar", arVoices);
 
         List<Map<String, String>> ruVoices = new ArrayList<>();
-        ruVoices.add(Map.of("id", "ErXwobaYiN019PkySvjV", "name", "Antoni (Multilingual)"));
+        ruVoices.add(Map.of("id", "vQxSi2EuaRWwBw3nn6dK", "name", "Marat (Multilingual)"));
         LANGUAGE_VOICES.put("ru", ruVoices);
     }
 
-    private static final String DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+    private static final String DEFAULT_VOICE_ID = "cCYjmrGZaI86GUJ7F2Nn";
 
     private String getDefaultVoiceForLanguage(String langCode) {
         List<Map<String, String>> voices = LANGUAGE_VOICES.get(langCode != null ? langCode.toLowerCase() : "en");
