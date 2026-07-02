@@ -7,6 +7,7 @@ import com.nexus.authservice.repo.PasswordResetTokenRepository;
 import com.nexus.authservice.repo.UserRepository;
 import com.nexus.authservice.repo.VerificationTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class AuthService {
     private VerificationTokenRepository verificationTokenRepository;
 
     @Autowired
-    private EmailService emailService;
+    private SendGridEmailService emailService;  // ← FIXED: Changed from SendGrid to SendGridEmailService
 
     // BCrypt cost factor 12 — as required by the backend plan
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
@@ -35,8 +36,10 @@ public class AuthService {
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 15;
     private static final int VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
 
+    @Value("${app.email.verification.enabled:true}")
+    private boolean emailVerificationEnabled;  // ← ADDED: Toggle for email verification
+
     // ===== REGISTER =====
-    // User is created as unverified; they must click the emailed link before they can log in.
     public User register(String email, String rawPassword, String fullName, String indexNumber, String role) {
         if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email already exists!");
@@ -60,13 +63,15 @@ public class AuthService {
 
         User saved = userRepository.save(user);
 
-        issueVerificationToken(saved.getId(), VerificationToken.TokenType.REGISTRATION, null, saved.getEmail());
+        // Only send verification email if enabled
+        if (emailVerificationEnabled) {
+            issueVerificationToken(saved.getId(), VerificationToken.TokenType.REGISTRATION, null, saved.getEmail());
+        }
 
         return saved;
     }
 
     // ===== LOGIN =====
-    // Blocks login until the user has verified their email.
     public User login(String email, String rawPassword) {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("User not found!"));
@@ -75,7 +80,8 @@ public class AuthService {
             throw new RuntimeException("Invalid password!");
         }
 
-        if (!user.isEmailVerified()) {
+        // Only check verification if enabled
+        if (emailVerificationEnabled && !user.isEmailVerified()) {
             throw new RuntimeException("Please verify your email before logging in. Check your inbox for the verification link.");
         }
 
@@ -108,6 +114,10 @@ public class AuthService {
     }
 
     public void resendVerificationEmail(String email) {
+        if (!emailVerificationEnabled) {
+            throw new RuntimeException("Email verification is disabled");
+        }
+
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -135,8 +145,6 @@ public class AuthService {
     }
 
     // ===== CHANGE EMAIL (authenticated user, re-verification required) =====
-    // Does NOT change the email immediately -- stores it as pendingEmail and sends a
-    // verification link to the NEW address. The switch only happens on confirmation.
     public void requestEmailChange(String currentEmail, String currentPassword, String newEmail) {
         User user = userRepository.findByEmail(currentEmail)
             .orElseThrow(() -> new RuntimeException("User not found"));
@@ -151,7 +159,9 @@ public class AuthService {
         user.setPendingEmail(newEmail);
         userRepository.save(user);
 
-        issueVerificationToken(user.getId(), VerificationToken.TokenType.EMAIL_CHANGE, newEmail, newEmail);
+        if (emailVerificationEnabled) {
+            issueVerificationToken(user.getId(), VerificationToken.TokenType.EMAIL_CHANGE, newEmail, newEmail);
+        }
     }
 
     public void confirmEmailChange(String token) {
