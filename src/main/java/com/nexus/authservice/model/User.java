@@ -54,9 +54,27 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
-    /** Holds a new email address awaiting confirmation via /verify-email-change. Not applied to `email` until confirmed. */
     @Column(name = "pending_email")
     private String pendingEmail;
+    
+    // ===== PRIVACY & CONSENT FIELDS =====
+    @Column(name = "data_consent")
+    private boolean dataConsent = false;
+    
+    @Column(name = "share_medical_data")
+    private boolean shareMedicalData = false;
+    
+    @Column(name = "share_location")
+    private boolean shareLocation = false;
+    
+    @Column(name = "receive_notifications")
+    private boolean receiveNotifications = true;
+    
+    @Column(name = "consent_given_at")
+    private LocalDateTime consentGivenAt;
+    
+    @Column(name = "consent_version")
+    private String consentVersion = "1.0";
     
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -89,6 +107,14 @@ public class User {
     public boolean isEmailVerified() { return emailVerified; }
     public String getPendingEmail() { return pendingEmail; }
     
+    // ===== PRIVACY GETTERS =====
+    public boolean isDataConsent() { return dataConsent; }
+    public boolean isShareMedicalData() { return shareMedicalData; }
+    public boolean isShareLocation() { return shareLocation; }
+    public boolean isReceiveNotifications() { return receiveNotifications; }
+    public LocalDateTime getConsentGivenAt() { return consentGivenAt; }
+    public String getConsentVersion() { return consentVersion; }
+    
     // ===== SETTERS =====
     public void setId(UUID id) { this.id = id; }
     public void setIndexNumber(String indexNumber) { this.indexNumber = indexNumber; }
@@ -111,6 +137,14 @@ public class User {
     // ===== EMAIL VERIFICATION SETTERS =====
     public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
     public void setPendingEmail(String pendingEmail) { this.pendingEmail = pendingEmail; }
+    
+    // ===== PRIVACY SETTERS =====
+    public void setDataConsent(boolean dataConsent) { this.dataConsent = dataConsent; }
+    public void setShareMedicalData(boolean shareMedicalData) { this.shareMedicalData = shareMedicalData; }
+    public void setShareLocation(boolean shareLocation) { this.shareLocation = shareLocation; }
+    public void setReceiveNotifications(boolean receiveNotifications) { this.receiveNotifications = receiveNotifications; }
+    public void setConsentGivenAt(LocalDateTime consentGivenAt) { this.consentGivenAt = consentGivenAt; }
+    public void setConsentVersion(String consentVersion) { this.consentVersion = consentVersion; }
     
     // ===== HELPER METHOD =====
     public boolean isAdmin() {

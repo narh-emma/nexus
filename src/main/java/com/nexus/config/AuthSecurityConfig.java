@@ -90,8 +90,11 @@ public class AuthSecurityConfig {
                 // ===== AUTHENTICATED - VALID JWT REQUIRED
                 // ============================================
                 .requestMatchers(
+                    // Privacy Service
+                    "/api/v1/privacy/**",         
+                    
                     // Profile Service
-                    "/api/v1/profile/**",           // ← ADDED
+                    "/api/v1/profile/**",
                     
                     // Translate Service
                     "/api/v1/translate/text-to-text",
@@ -99,7 +102,7 @@ public class AuthSecurityConfig {
                     "/api/v1/translate/speech-to-text",
                     "/api/v1/translate/sign-to-text",
                     "/api/v1/translate/multimodal",
-                    "/api/v1/translate/dictionary",  // GET only
+                    "/api/v1/translate/dictionary",  
                     "/api/v1/translate/history",
                     
                     // Media Service (view count)
