@@ -17,7 +17,7 @@ WORKDIR /app
 # ---- Python + edge-tts CLI (needed by EdgeTtsService, which shells out to it) ----
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip \
-    && pip3 install --no-cache-dir edge-tts --break-system-packages \
+    && pip3 install --no-cache-dir edge-tts \
     && apt-get purge -y --auto-remove python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
