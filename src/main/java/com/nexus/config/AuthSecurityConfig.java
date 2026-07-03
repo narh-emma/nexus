@@ -41,6 +41,8 @@ public class AuthSecurityConfig {
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/health",
                     "/api/v1/auth/verify",
+                    "/api/v1/auth/verify-email",        // ← ADDED
+                    "/api/v1/auth/verify-email-change", // ← ADDED
                     "/api/v1/auth/password/**",
                     
                     // News Service (GET only)
